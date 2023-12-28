@@ -1,0 +1,6 @@
+{
+    "logPrefix": "MyApp",
+    "logDateFormat": "YYYY-MM-DD HH:mm:ss",
+    "verbose": true,
+    "noColors": true
+}  
