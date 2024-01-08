@@ -53,11 +53,11 @@ const DynamicForm = () => {
     // Fetch table columns when the selected table changes
     if (tableName && sysID) {
       try {
-        const data = await ApiService.getData({
+        const resp = await ApiService.getData({
           tableName: tableName,
           sys_id: sysID,
         });
-        setFormData(data.pop());
+        setFormData(resp.data.pop());
       } catch (error) {
         console.error("Error fetching table columns:", error);
       }
@@ -92,7 +92,7 @@ const DynamicForm = () => {
     try {
       const response = await ApiService.deleteData(tableName, sysID);
       if (response.status === "success") {
-        console.log("Row inserted successfully:");
+        console.log("Row DELETED successfully:");
         navigate(-1);
       }
     } catch (error) {

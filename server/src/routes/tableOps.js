@@ -4,22 +4,118 @@ const router = express.Router();
 const TableService = require("../services/TableService");
 const databaseMiddleware = require("../middleware/databaseMiddleware");
 
+const Sequelizer = require("../services/Sequelizer");
+const sequelizer = new Sequelizer();
+
 // Database connection middleware
 router.use(databaseMiddleware);
 
-// GET ROWS
+/*
+ * SEQUELIZE ROUTES
+ */
+// test connection
+router.get("/test_connection", async (req, res) => {
+  const result = sequelizer.testConnection();
+  res.json({ response: result });
+});
+
+router.get("/show_columns", async (req, res) => {
+  const { table } = req.query;
+  const result = await sequelizer.getColumns(table);
+  res.json(result);
+});
+
+router.get("/show_tables", async (req, res) => {
+  const result = await sequelizer.getTables();
+  res.json(result);
+});
+
+// Endpoint to create a table
+router.get("/create_table", async (req, res) => {
+  const { name } = req.query;
+  const result = await sequelizer.createTable(name);
+  res.json(result);
+});
+
+// Endpoint to drop a table
+router.get("/drop_table", async (req, res) => {
+  const { name } = req.query;
+  const result = await sequelizer.dropTable(name);
+  res.json(result);
+});
+
+// Endpoint to create a column
+router.get("/create_column", async (req, res) => {
+  const { table, column, length } = req.query;
+  const result = await sequelizer.createColumn(table, column, length);
+  res.json(result);
+});
+
+// Endpoint to delete a column
+router.get("/delete_column", async (req, res) => {
+  const { table, column } = req.query;
+  const result = await sequelizer.removeColumnColumn(table, column);
+  res.json(result);
+});
+
 router.get("/rows/:table_name", async (req, res) => {
   try {
-    const result = await TableService.getRows(req);
+    const result = await sequelizer.getRows(req);
     res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
-  } finally {
-    // Release the connection back to the pool
-    req.db.release();
   }
 });
+
+// INSERT ROW
+router.post("/rows/:table_name", async (req, res) => {
+  try {
+    const result = await sequelizer.insertRow(req);
+    res.json(result);
+  } catch (error) {
+    console.error("Insert rows error: ", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/rows/:table_name", async (req, res) => {
+  try {
+    const result = await sequelizer.deleteRow(req);
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// // UPSERT ROW
+// router.post("/rows/:table_name", async (req, res) => {
+//   try {
+//     const result = await sequelizer.upsertRow(req);
+//     res.json(result);
+//   } catch (error) {
+//     console.error("upsert rows error: ", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
+
+/*
+ * DB CONNECTION ROUTES (to decommission)
+ */
+// GET ROWS
+// router.get("/rows/:table_name", async (req, res) => {
+//   try {
+//     const result = await TableService.getRows(req);
+//     res.json(result);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   } finally {
+//     // Release the connection back to the pool
+//     req.db.release();
+//   }
+// });
 
 // GET COLUMNS
 router.get("/columns/:table_name", async (req, res) => {
@@ -35,19 +131,19 @@ router.get("/columns/:table_name", async (req, res) => {
   }
 });
 
-// INSERT ROW
-router.post("/rows/:table_name", async (req, res) => {
-  try {
-    const result = await TableService.insertRow(req);
-    res.json(result);
-  } catch (error) {
-    console.error("Insert rows error: ", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  } finally {
-    // Release the connection back to the pool
-    req.db.release();
-  }
-});
+// // INSERT ROW
+// router.post("/rows/:table_name", async (req, res) => {
+//   try {
+//     const result = await TableService.insertRow(req);
+//     res.json(result);
+//   } catch (error) {
+//     console.error("Insert rows error: ", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   } finally {
+//     // Release the connection back to the pool
+//     req.db.release();
+//   }
+// });
 
 // DELETE ROW
 router.delete("/rows/:table_name", async (req, res) => {
@@ -61,44 +157,6 @@ router.delete("/rows/:table_name", async (req, res) => {
     req.db.release();
   }
 });
-
-// // Endpoint to create a table
-// router.post("/create-table", async (req, res) => {
-//   const { tableName, columns } = req.body;
-
-//   try {
-//     // Create the table
-//     await req.db.query(`CREATE TABLE ${tableName} (${columns})`);
-//     res.json({ message: `Table '${tableName}' created successfully` });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Error creating table" });
-//   } finally {
-//     // Release the connection back to the pool
-//     req.db.release();
-//   }
-// });
-
-// // Endpoint to add a column to an existing table
-// router.post("/add-column", async (req, res) => {
-//   const { tableName, columnName, columnType } = req.body;
-
-//   try {
-//     // Add a column to the table
-//     await req.db.query(
-//       `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`
-//     );
-//     res.json({
-//       message: `Column '${columnName}' added to table '${tableName}'`,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Error adding column" });
-//   } finally {
-//     // Release the connection back to the pool
-//     req.db.release();
-//   }
-// });
 
 // Endpoint to get a list of tables
 router.get("/tables", async (req, res) => {

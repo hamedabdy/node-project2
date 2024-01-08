@@ -1,6 +1,7 @@
 // components/TableList.js
 import React, { useState, useEffect } from "react";
 import ApiService from "../services/ApiService";
+import { Link } from "react-router-dom";
 
 const TableList = () => {
   const [tables, setTables] = useState([]);
@@ -24,7 +25,9 @@ const TableList = () => {
       <ol>
         {tables.map((o, i) => (
           <li key={i}>
-            {o.table_name} | {o.table_type}
+            <Link to={`/list/${o.table_name}`}>
+              {o.table_name} | {o.table_type}
+            </Link>
           </li>
         ))}
       </ol>
