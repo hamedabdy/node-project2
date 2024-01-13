@@ -17,7 +17,7 @@ const ApiService = {
   getColumns: async (tableName) => {
     const uri = `${tableApiUrl}/columns/${tableName}`;
     try {
-      const response = await axios.get(uri, { param: {} });
+      const response = await axios.get(uri);
       return response.data;
     } catch (error) {
       console.error("Error fetching columns:", error);
@@ -26,7 +26,7 @@ const ApiService = {
   },
 
   /**
-   * @param {Object} params contains sys_id and tableName
+   * @param {Object} parms contains sys_id and tableName
    */
   getData: async (parms) => {
     let p = {};
@@ -66,38 +66,12 @@ const ApiService = {
     if (sys_id) p.sys_id = sys_id;
     try {
       const response = await axios.delete(uri, { params: p });
-      console.log("delete response : ", response.data);
       return response.data;
     } catch (error) {
       console.error("Error delete data:", error);
       throw error;
     }
   },
-
-  // createTable: async (tableName, columns) => {
-  //   const uri = `${tableApiUrl}/create-table`;
-  //   try {
-  //     const response = await axios.post(uri, {
-  //       tableName,
-  //       columns,
-  //     });
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error("Error creating table:", error);
-  //     throw error;
-  //   }
-  // },
-
-  // deleteTable: async (tableName) => {
-  //   const uri = `${tableApiUrl}/delete-table`;
-  //   try {
-  //     const response = await axios.delete(uri, tableName);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error("Error creating table:", error);
-  //     throw error;
-  //   }
-  // },
 };
 
 export default ApiService;

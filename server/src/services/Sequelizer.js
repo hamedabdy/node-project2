@@ -104,15 +104,20 @@ class Sequelizer {
       });
   }
 
-  async getColumns(tableName) {
+  async getColumns(table_name) {
     return await this.sequelize.queryInterface
-      .describeTable(tableName)
+      .describeTable(table_name)
       .then((tableDefinition) => {
-        return tableDefinition;
+        return {
+          table: table_name,
+          data: tableDefinition,
+          status: "success",
+          err: "",
+        };
       })
       .catch((e) => {
-        console.error(e);
-        return e;
+        console.error("Get columns error : ", e);
+        return { table: table_name, data: {}, status: "fail", err: e };
       });
   }
 
@@ -176,7 +181,7 @@ class Sequelizer {
     const attributes = await this.getColumns(table_name);
 
     // Define the model for the table
-    const Model = this.sequelize.define(table_name, attributes);
+    const Model = this.sequelize.define(table_name, attributes.data);
 
     if (!sys_id) {
       const where = sysparm_query ? { where: { sysparm_query } } : {};
@@ -185,7 +190,7 @@ class Sequelizer {
           return { data: result, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error(e);
+          console.error("Get rows error : ", e);
           return { data: "", status: "fail", err: e };
         });
     }
@@ -196,7 +201,7 @@ class Sequelizer {
           return { data: result, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error(e);
+          console.error("Get rows error : ", e);
           return { data: "", status: "fail", err: e };
         });
     }
@@ -225,7 +230,7 @@ class Sequelizer {
           return { data: [result], status: "success", err: "" };
         })
         .catch((e) => {
-          console.error(e);
+          console.error("Get rows error : ", e);
           return { data: "", status: "fail", err: e };
         });
     }
@@ -244,16 +249,15 @@ class Sequelizer {
       this.sequelize.fn("NOW");
 
     // Define the model for the table
-    const Model = this.sequelize.define(table_name, attributes);
+    const Model = this.sequelize.define(table_name, attributes.data);
 
     // Insert the new row
     return await Model.create(req.body)
       .then((result) => {
-        console.log("Record created");
-        return { sys_id: result.sys_id, status: "success", err: "" };
+        return { sys_id: result.dataValues.sys_id, status: "success", err: "" };
       })
       .catch((e) => {
-        console.error(e);
+        console.error("Insert row error : ", e);
         return { sys_id: "", status: "fail", err: e };
       });
   }
@@ -263,7 +267,7 @@ class Sequelizer {
     const { table_name, sys_id } = req.params;
     const attributes = await this.getColumns(table_name);
 
-    const Model = this.sequelize.define(table_name, attributes);
+    const Model = this.sequelize.define(table_name, attributes.data);
 
     const instance = await Model.findOne({ where: { sys_id } });
     // No record found with the provided sys_id
@@ -277,11 +281,10 @@ class Sequelizer {
       },
     })
       .then(() => {
-        console.log("Record updated");
         return { sys_id: sys_id, status: "success", err: "" };
       })
       .catch((e) => {
-        console.error(e);
+        console.error("Update row error : ", e);
         return { sys_id: sys_id, status: "fail", err: e };
       });
   }
@@ -295,11 +298,11 @@ class Sequelizer {
 
     return await Model.destroy({ where: { sys_id } })
       .then((result) => {
-        console.log("Record deleted");
+        console.log("Record deleted : ", result.dataValues);
         return { sys_id: result, status: "success", err: "" };
       })
       .catch((e) => {
-        console.error(e);
+        console.error("Delete row error : ", e);
         return { sys_id: "", status: "fail", err: e };
       });
   }
@@ -310,9 +313,9 @@ class Sequelizer {
   //   const { sys_id } = req.body;
   //   const attributes = await this.getColumns(table_name);
 
-  //   const Model = this.sequelize.define(table_name, attributes);
+  //   const Model = this.sequelize.define(table_name, attributes.data);
 
-  //   let fields = Object.keys(attributes).filter(
+  //   let fields = Object.keys(attributes.data).filter(
   //     (item) =>
   //       ![
   //         "sys_id",

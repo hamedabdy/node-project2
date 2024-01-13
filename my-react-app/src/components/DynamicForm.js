@@ -1,27 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
 
 // Styles
-import Button from "@mui/material/Button";
 import SaveIcon from "@mui/icons-material/Save";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import Stack from "@mui/material/Stack";
-import Box from "@mui/material/Box";
-// import TextField from "@mui/material/TextField";
-import InputLabel from "@mui/material/InputLabel";
-import InputAdornment from "@mui/material/InputAdornment";
-// import FormHelperText from "@mui/material/FormHelperText";
-import FormControl from "@mui/material/FormControl";
-import Input from "@mui/material/Input";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  // Link,
+  // Paper,
+  Stack,
+  Input,
+  FormControl,
+  InputAdornment,
+  InputLabel,
+  Box,
+} from "@mui/material";
+import { styled } from "@mui/system";
+
+const StyledAppBar = styled(AppBar)({
+  marginBottom: "1em",
+});
 
 const DynamicForm = () => {
   const navigate = useNavigate();
   const { tableName } = useParams();
   const [searchParams] = useSearchParams();
   const [sysID, setSysID] = useState(searchParams.get("sys_id"));
+  const [resp, setRes] = useState({});
   const [columns, setColumns] = useState([]);
   const [formData, setFormData] = useState({});
 
@@ -32,17 +43,19 @@ const DynamicForm = () => {
     // Set document title
     document.title = tableName;
     if (sysID === "-1") document.title += " -- New Record";
-    else document.title += " -- " + formData.PersonID;
+    else document.title += " -- " + formData.name;
 
     // eslint-disable-next-line
   }, [tableName, sysID]);
 
+  //
   const getColumns = async () => {
     // Fetch table columns when the selected table changes
     if (tableName) {
       try {
-        const cols = await ApiService.getColumns(tableName);
-        setColumns(cols);
+        const resp = await ApiService.getColumns(tableName);
+        setRes(resp);
+        setColumns(Object.keys(resp.data));
       } catch (error) {
         console.error("Error fetching table columns:", error);
       }
@@ -78,7 +91,6 @@ const DynamicForm = () => {
       // Send a request to your API to insert a new row
       const response = await ApiService.addData(tableName, formData);
       if (response.status === "success") {
-        console.log("Row inserted successfully:");
         setSysID(response.sys_id);
         navigate(`?sys_id=${response.sys_id}`);
       }
@@ -92,7 +104,6 @@ const DynamicForm = () => {
     try {
       const response = await ApiService.deleteData(tableName, sysID);
       if (response.status === "success") {
-        console.log("Row DELETED successfully:");
         navigate(-1);
       }
     } catch (error) {
@@ -100,17 +111,33 @@ const DynamicForm = () => {
     }
   };
 
+  const listHeader = (tableName) => {
+    return (
+      <StyledAppBar position="static" color="default">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            {tableName}
+          </Typography>
+          <Typography variant="h8" sx={{ flexGrow: 1 }}>
+            {sysID === "-1" ? "New Record" : `${formData.sys_id}`}
+          </Typography>
+          {renderButtons()}
+        </Toolbar>
+      </StyledAppBar>
+    );
+  };
+
   // Form top and bottom buttons
   const renderButtons = (direction) => {
     const dir = !direction ? "row" : direction;
     return (
       <Stack direction={dir} spacing={2}>
-        <Button type="submit" variant="outlined" endIcon={<SaveIcon />}>
+        <Button type="submit" variant="contained" endIcon={<SaveIcon />}>
           Save
         </Button>
         <Button
           type="button"
-          variant="outlined"
+          variant="contained"
           color="error"
           endIcon={<DeleteIcon />}
           onClick={handleDelete}
@@ -121,16 +148,44 @@ const DynamicForm = () => {
     );
   };
 
+  const renderForm = () => {
+    const keys = Object.keys(columns.data);
+    return (
+      <Box>
+        {columns.data.map((column, i) => (
+          <Stack key={keys[i]}>
+            <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+              <InputLabel htmlFor={`standard-adornment-${keys[i]}`}>
+                {keys[i]}
+              </InputLabel>
+              <Input
+                id={`standard-adornment-${keys[i]}`}
+                value={formData[keys[i]] || ""}
+                onChange={(e) => handleInputChange(keys[i], e.target.value)}
+                startAdornment={
+                  <InputAdornment position="start">
+                    {keys[i].type}
+                  </InputAdornment>
+                }
+              />
+            </FormControl>
+          </Stack>
+        ))}
+      </Box>
+    );
+  };
+
+  // const keys = Object.keys(columns.data);
+
   return (
     <div>
-      <h1>{tableName}</h1>
-      {sysID === "-1" ? <h4>New Record</h4> : ""}
+      {listHeader(tableName)}
       <Box
         component="form"
         sx={{
           "& > :not(style)": {
             m: 1,
-            width: "45%",
+            width: "50%",
             p: 2,
           },
         }}
@@ -138,28 +193,25 @@ const DynamicForm = () => {
         autoComplete="off"
         onSubmit={handleSubmit}
       >
-        {renderButtons("row-reverse")}
-        {/* Render input fields dynamically based on table columns */}
+        {/* {renderForm()} */}
         {columns.map((column) => (
-          <div key={column.Field}>
+          <Stack key={column}>
             <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-              <InputLabel htmlFor={`standard-adornment-${column.Field}`}>
-                {column.Field}
+              <InputLabel htmlFor={`standard-adornment-${column}`}>
+                {column}
               </InputLabel>
               <Input
-                id={`standard-adornment-${column.Field}`}
-                value={formData[column.Field] || ""}
-                onChange={(e) =>
-                  handleInputChange(column.Field, e.target.value)
-                }
+                id={`standard-adornment-${column}`}
+                value={formData[column] || ""}
+                onChange={(e) => handleInputChange(column, e.target.value)}
                 startAdornment={
                   <InputAdornment position="start">
-                    {column.Field_Type}
+                    {resp.data[column].type}
                   </InputAdornment>
                 }
               />
             </FormControl>
-          </div>
+          </Stack>
         ))}
         {renderButtons()}
       </Box>

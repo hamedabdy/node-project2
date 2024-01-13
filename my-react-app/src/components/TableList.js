@@ -1,7 +1,15 @@
 // components/TableList.js
 import React, { useState, useEffect } from "react";
 import ApiService from "../services/ApiService";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
+
+import {
+  Drawer,
+  List,
+  ListItemText,
+  ListSubheader,
+  ListItemButton,
+} from "@mui/material";
 
 const TableList = () => {
   const [tables, setTables] = useState([]);
@@ -15,23 +23,28 @@ const TableList = () => {
         // Handle error
       }
     };
-
     fetchTables();
   }, []);
 
   return (
-    <div>
-      <h2>List of Tables</h2>
-      <ol>
-        {tables.map((o, i) => (
-          <li key={i}>
-            <Link to={`/list/${o.table_name}`}>
-              {o.table_name} | {o.table_type}
-            </Link>
-          </li>
+    <Drawer variant="permanent" anchor="left">
+      <List
+        sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+        component="nav"
+        aria-labelledby="nested-list-subheader"
+        subheader={
+          <ListSubheader component="div" id="nested-list-subheader">
+            Nested List Items
+          </ListSubheader>
+        }
+      >
+        {tables.map((o) => (
+          <ListItemButton to={`/list/${o.tableName}`}>
+            <ListItemText primary={o.tableName} />
+          </ListItemButton>
         ))}
-      </ol>
-    </div>
+      </List>
+    </Drawer>
   );
 };
 

@@ -1,17 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link as ReactRouterLink } from "react-router-dom";
+// import PropTypes from "prop-types"; // data type checking
 
 import ApiService from "../services/ApiService";
 
 // Styles
-import Table from "@mui/material/Table";
-import TableHead from "@mui/material/TableHead";
-import TableBody from "@mui/material/TableBody";
-import TableRow from "@mui/material/TableRow";
-import TableCell from "@mui/material/TableCell";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
+import {
+  AppBar,
+  // Box,
+  Toolbar,
+  Typography,
+  Button,
+  Breadcrumbs,
+  Link,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Stack,
+} from "@mui/material";
+// import { DataGrid } from "@mui/x-data-grid";
+import { styled } from "@mui/system";
+
+const StyledAppBar = styled(AppBar)({
+  marginBottom: "1em",
+});
+
+const StyledTable = styled(Table)({
+  minWidth: 650,
+});
 
 const DynamicList = () => {
   const { tableName } = useParams();
@@ -27,37 +47,53 @@ const DynamicList = () => {
     try {
       const cols = await ApiService.getColumns(tableName);
       const resp = await ApiService.getData({ tableName: tableName });
-      setColumns(cols);
+      setColumns(Object.keys(cols.data));
       setData(resp.data);
     } catch (error) {
       console.log("Error in DynamicList: ", error);
     }
   };
 
-  // Form top and bottom buttons
-  const renderButtons = (direction, tableName) => {
-    const dir = !direction ? "row" : direction;
+  const listHeader = (tableName) => {
     return (
-      <Stack direction={dir} spacing={2}>
-        <Button variant="outlined" href={`../form/${tableName}?sys_id=-1`}>
-          New
-        </Button>
-      </Stack>
+      <StyledAppBar position="static" color="default">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            {tableName}
+          </Typography>
+          {/* Add your dropdown list here */}
+          <Button variant="contained" href={`../form/${tableName}?sys_id=-1`}>
+            New
+          </Button>
+        </Toolbar>
+        <div>{breadCrumbs()}</div>
+      </StyledAppBar>
+    );
+  };
+
+  const breadCrumbs = () => {
+    return (
+      <Breadcrumbs aria-label="breadcrumb">
+        {/* Add your breadcrumb items here */}
+        <Link color="inherit" href="/">
+          Home
+        </Link>
+        <Typography color="textPrimary">Current Page</Typography>
+      </Breadcrumbs>
     );
   };
 
   return (
     <div>
-      <span>
-        <h1>{tableName}</h1>
-      </span>
-      <span>{renderButtons("row-reverse", tableName)}</span>
-      <Paper>
-        <Table>
+      <Stack>{listHeader(tableName)}</Stack>
+      {/* Add your pagination component here */}
+      <TableContainer component={Paper} elevation={4}>
+        <StyledTable stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
+              {/* Add your table headers here */}
               {columns.map((column) => (
-                <TableCell key={column.Field}>{column.Field}</TableCell>
+                <TableCell key={column}>{column}</TableCell>
               ))}
             </TableRow>
           </TableHead>
@@ -65,25 +101,42 @@ const DynamicList = () => {
             {data.map((row) => (
               <TableRow key={row.sys_id}>
                 {columns.map((column) => (
-                  <TableCell key={column.Field}>
-                    {column.Field === "sys_id" ? (
+                  <TableCell key={column}>
+                    {column === "sys_id" ? (
                       <Link
-                        to={`../form/${tableName}?${column.Field}=${
-                          row[column.Field]
-                        }`}
+                        component={ReactRouterLink}
+                        to={`../form/${tableName}?${column}=${row[column]}`}
                       >
-                        {row[column.Field]}
+                        {row[column]}
                       </Link>
                     ) : (
-                      row[column.Field]
+                      row[column]
                     )}
                   </TableCell>
                 ))}
               </TableRow>
             ))}
           </TableBody>
-        </Table>
-      </Paper>
+        </StyledTable>
+      </TableContainer>
+
+      {/* <Box sx={{ height: 400, width: "100%" }}>
+        <DataGrid
+          rows={data}
+          columns={columns}
+          getRowId={(row) => row.sys_id}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
+            },
+          }}
+          pageSizeOptions={[5]}
+          checkboxSelection
+          disableRowSelectionOnClick
+        />
+      </Box> */}
     </div>
   );
 };
