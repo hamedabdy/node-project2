@@ -1,8 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
+// CHALK LOGGING
+const chalk = require("chalk");
+const log = console.log;
+const warning = chalk.bold.hex("#FFA500"); // Orange color
+
 const Sequelizer = require("../services/Sequelizer");
 const sequelizer = new Sequelizer();
+
+const utils = require("../utils/utils"); // Load utilies
 
 /*
  * SEQUELIZE ROUTES
@@ -65,19 +72,19 @@ router.get("/rows/:table_name", async (req, res) => {
     const result = await sequelizer.getRows(req);
     res.json(result);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("GET ROWS : error: ", error);
+    res.status(500).json({ error: "GET ROWS : Internal Server Error" });
   }
 });
 
-// INSERT ROW
+// INSERT / UPDATE ROW
 router.post("/rows/:table_name", async (req, res) => {
   try {
-    const result = await sequelizer.insertRow(req);
+    const result = await sequelizer.handleRecord(req);
     res.json(result);
   } catch (error) {
-    console.error("Insert rows error: ", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("HandleRecord error: ", error);
+    res.status(500).json({ error: "HandleRecord : Internal Server Error" });
   }
 });
 
@@ -87,8 +94,8 @@ router.delete("/rows/:table_name", async (req, res) => {
     const result = await sequelizer.deleteRow(req);
     res.json(result);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("DELETE ROW : error: ", error);
+    res.status(500).json({ error: "DELETE ROW : Internal Server Error" });
   }
 });
 

@@ -42,8 +42,10 @@ const DynamicForm = () => {
 
     // Set document title
     document.title = tableName;
-    if (sysID === "-1") document.title += " -- New Record";
-    else document.title += " -- " + formData.name;
+    if (sysID === "-1") {
+      setFormData({ sys_id: -1 });
+      document.title += " -- New Record";
+    } else document.title += " -- " + formData.sys_id;
 
     // eslint-disable-next-line
   }, [tableName, sysID]);
@@ -111,6 +113,26 @@ const DynamicForm = () => {
     }
   };
 
+  // Form top and bottom buttons
+  const renderButtons = (direction) => {
+    const dir = !direction ? "row" : direction;
+    return (
+      <Stack direction={dir} spacing={2}>
+        <Button type="submit" variant="contained">
+          Save
+        </Button>
+        <Button
+          type="button"
+          variant="contained"
+          color="error"
+          onClick={handleDelete}
+        >
+          Delete
+        </Button>
+      </Stack>
+    );
+  };
+
   const listHeader = (tableName) => {
     return (
       <StyledAppBar position="static" color="default">
@@ -127,95 +149,30 @@ const DynamicForm = () => {
     );
   };
 
-  // Form top and bottom buttons
-  const renderButtons = (direction) => {
-    const dir = !direction ? "row" : direction;
-    return (
-      <Stack direction={dir} spacing={2}>
-        <Button type="submit" variant="contained" endIcon={<SaveIcon />}>
-          Save
-        </Button>
-        <Button
-          type="button"
-          variant="contained"
-          color="error"
-          endIcon={<DeleteIcon />}
-          onClick={handleDelete}
-        >
-          Delete
-        </Button>
-      </Stack>
-    );
-  };
-
-  const renderForm = () => {
-    const keys = Object.keys(columns.data);
-    return (
-      <Box>
-        {columns.data.map((column, i) => (
-          <Stack key={keys[i]}>
-            <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-              <InputLabel htmlFor={`standard-adornment-${keys[i]}`}>
-                {keys[i]}
-              </InputLabel>
-              <Input
-                id={`standard-adornment-${keys[i]}`}
-                value={formData[keys[i]] || ""}
-                onChange={(e) => handleInputChange(keys[i], e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    {keys[i].type}
-                  </InputAdornment>
-                }
-              />
-            </FormControl>
-          </Stack>
-        ))}
-      </Box>
-    );
-  };
-
-  // const keys = Object.keys(columns.data);
-
   return (
-    <div>
+    <Box component="form" noValidate autoComplete="off" onSubmit={handleSubmit}>
       {listHeader(tableName)}
-      <Box
-        component="form"
-        sx={{
-          "& > :not(style)": {
-            m: 1,
-            width: "50%",
-            p: 2,
-          },
-        }}
-        noValidate
-        autoComplete="off"
-        onSubmit={handleSubmit}
-      >
-        {/* {renderForm()} */}
-        {columns.map((column) => (
-          <Stack key={column}>
-            <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-              <InputLabel htmlFor={`standard-adornment-${column}`}>
-                {column}
-              </InputLabel>
-              <Input
-                id={`standard-adornment-${column}`}
-                value={formData[column] || ""}
-                onChange={(e) => handleInputChange(column, e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    {resp.data[column].type}
-                  </InputAdornment>
-                }
-              />
-            </FormControl>
-          </Stack>
-        ))}
-        {renderButtons()}
-      </Box>
-    </div>
+      {columns.map((column) => (
+        <Stack key={column}>
+          <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+            <InputLabel htmlFor={`standard-adornment-${column}`}>
+              {column}
+            </InputLabel>
+            <Input
+              id={`standard-adornment-${column}`}
+              value={formData[column] || ""}
+              onChange={(e) => handleInputChange(column, e.target.value)}
+              startAdornment={
+                <InputAdornment position="start">
+                  {resp.data[column].type}
+                </InputAdornment>
+              }
+            />
+          </FormControl>
+        </Stack>
+      ))}
+      {renderButtons()}
+    </Box>
   );
 };
 

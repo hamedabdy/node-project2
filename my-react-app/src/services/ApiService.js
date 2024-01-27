@@ -48,7 +48,9 @@ const ApiService = {
   addData: async (tableName, newData) => {
     const uri = `${tableApiUrl}/rows/${tableName}`;
     try {
-      const response = await axios.post(uri, newData);
+      const response = await axios.post(uri, newData, {
+        params: { sys_id: newData.sys_id },
+      });
       return response.data;
     } catch (error) {
       console.error("Error adding rows:", error);
