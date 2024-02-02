@@ -39,7 +39,7 @@ const TableList = () => {
         }
       >
         {tables.map((o) => (
-          <ListItemButton to={`/list/${o.tableName}`}>
+          <ListItemButton to={`/${o.tableName}.list`}>
             <ListItemText primary={o.tableName} />
           </ListItemButton>
         ))}

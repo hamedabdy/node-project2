@@ -14,6 +14,9 @@ const ApiService = {
     }
   },
 
+  /**
+   * @param {String} tableName name of the table to get columns for
+   */
   getColumns: async (tableName) => {
     const uri = `${tableApiUrl}/columns/${tableName}`;
     try {

@@ -2,13 +2,19 @@
 const chalk = require("chalk");
 const log = console.log;
 const warning = chalk.bold.hex("#FFA500"); // Orange color
+/////
 
 const { Sequelize, DataTypes } = require("sequelize");
-const { v1: uuidv1, v5: uuidv5 } = require("uuid");
 
 const { dbConfig } = require("../config/database");
 const Utils = require("../utils/utils"); // Load utilies
 const utils = new Utils();
+
+// IMPORT MODELS
+const SysMetaData = require("../models/SysMetaData");
+const SysGlideObject = require("../models/SysGlideObject");
+const SysDictionary = require("../models/SysDictionary");
+const SysDbObject = require("../models/SysDbObject");
 
 const sequelize = new Sequelize(
   dbConfig.database,
@@ -28,6 +34,11 @@ const sequelize = new Sequelize(
 class Sequelizer {
   constructor(config) {
     this.sequelize = sequelize;
+    this.sysMetaData = SysMetaData(this.sequelize);
+    this.sysGlideObject = SysGlideObject(this.sequelize, this.sysMetaData);
+    this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData);
+    this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData);
+    this.sequelize.sync({ alter: false });
   }
 
   async testConnection() {
@@ -251,7 +262,7 @@ class Sequelizer {
     const { data } = await this.getColumns(table_name);
 
     // unique 32-character sys_id
-    req.body.sys_id = this.generateSysID();
+    req.body.sys_id = utils.generateSysID();
 
     // set default values for sys_ columns
     req.body.sys_updated_by = req.body.sys_created_by = "system";
@@ -318,6 +329,8 @@ class Sequelizer {
 
     this.addHooks(Model, "bulkDelete", data);
 
+    this.sysMetaData.deleteRow(sys_id);
+
     return await Model.destroy({ where: { sys_id: sys_id }, returning: true })
       .then((result, deletedRecords) => {
         console.log("Record deleted : %i\nRecords: %o", result, deletedRecords);
@@ -330,34 +343,35 @@ class Sequelizer {
   }
 
   //// HELPER METHODS
-  generateSysID() {
-    // Generate a UUIDv1
-    const uuidv1Output = uuidv1().replace(/-/g, "");
-    // Use the output of UUIDv1 as the input for UUIDv5
-    return uuidv5(uuidv1Output, uuidv5.DNS).replace(/-/g, "");
-  }
 
   addHooks(Model, operation, records) {
     switch (operation) {
       case "create":
         Model.addHook("beforeCreate", (model, options) => {
           // TODO : add before business rules
-          // log(warning("table : ", model.getTableName()));
-          // if (model.getTableName()) log(warning("operation: ", operation));
         });
         Model.addHook("afterCreate", (model, options) => {
           // TODO : add after business rules
           log(
-            warning("Running afterupdate hook for table : %s, %o"),
+            warning("Running afterCreate hook for table : %s, %o"),
             model.get("sys_class_name"),
             options
           );
+          switch (model.get("sys_class_name")) {
+            case "sys_dictionary":
+              this.createColumn(
+                model.get("table"),
+                model.get("name"),
+                model.get("length")
+              );
+              break;
 
-          this.createColumn(
-            model.get("sys_class_name"),
-            model.get("name"),
-            model.get("length")
-          );
+            case "sys_db_object":
+              this.createTable(model.get("name"));
+              break;
+            default:
+              break;
+          }
         });
         break;
       case "update":
@@ -376,11 +390,20 @@ class Sequelizer {
             warning("Running afterupdate hook for table : %s"),
             model.get("sys_class_name")
           );
-          this.createColumn(
-            model.get("sys_class_name"),
-            model.get("name"),
-            model.get("length")
-          );
+
+          switch (model.get("sys_class_name")) {
+            case sys_dictionary:
+              // TODO UPDATE COLUMN
+              // this.createColumn(model.get("sys_class_name"),model.get("name"),model.get("length"));
+              break;
+
+            case sys_db_object:
+              log(warning("table name : %s"), model.get("name"));
+              // this.createTable()
+              break;
+            default:
+              break;
+          }
         });
         break;
       case "delete":
@@ -412,7 +435,8 @@ class Sequelizer {
             warning("Running afterBulkDestroy hook for table : %s"),
             record.sys_class_name
           );
-          this.removeColumn(record.sys_class_name, record.name);
+          if (record.sys_class_name === "sys_dictionary")
+            this.removeColumn(record.sys_class_name, record.name);
         });
         break;
       default:

@@ -58,15 +58,24 @@ const DynamicList = () => {
     return (
       <StyledAppBar position="static" color="default">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {tableName}
+          <Typography
+            variant="h5"
+            sx={{
+              flexGrow: 1,
+              fontWeight: "bold",
+              textTransform: "capitalize",
+            }}
+          >
+            {tableName}s
           </Typography>
           {/* Add your dropdown list here */}
-          <Button variant="contained" href={`../form/${tableName}?sys_id=-1`}>
+          <Button variant="contained" href={`/${tableName}.form?sys_id=-1`}>
             New
           </Button>
         </Toolbar>
-        <div>{breadCrumbs()}</div>
+        <Typography variant="h7" sx={{ flexGrow: 1, marginLeft: "10px" }}>
+          {breadCrumbs()}
+        </Typography>
       </StyledAppBar>
     );
   };
@@ -78,7 +87,7 @@ const DynamicList = () => {
         <Link color="inherit" href="/">
           Home
         </Link>
-        <Typography color="textPrimary">Current Page</Typography>
+        <Typography color="textPrimary">Current page</Typography>
       </Breadcrumbs>
     );
   };
@@ -91,7 +100,6 @@ const DynamicList = () => {
         <StyledTable stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
-              {/* Add your table headers here */}
               {columns.map((column) => (
                 <TableCell key={column}>{column}</TableCell>
               ))}
@@ -105,7 +113,7 @@ const DynamicList = () => {
                     {column === "sys_id" ? (
                       <Link
                         component={ReactRouterLink}
-                        to={`../form/${tableName}?${column}=${row[column]}`}
+                        to={`/${tableName}.form?${column}=${row[column]}`}
                       >
                         {row[column]}
                       </Link>

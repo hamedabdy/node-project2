@@ -1,27 +1,31 @@
-import React, { useState, useEffect, lazy } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
 
 // Styles
-import SaveIcon from "@mui/icons-material/Save";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { styled } from "@mui/system";
+
+// import SaveIcon from "@mui/icons-material/Save";
+// import DeleteIcon from "@mui/icons-material/Delete";
 
 import {
   AppBar,
   Toolbar,
   Typography,
   Button,
-  // Link,
+  Link,
   // Paper,
+  Breadcrumbs,
   Stack,
-  Input,
+  // Input,
+  Grid,
   FormControl,
-  InputAdornment,
+  // InputAdornment,
   InputLabel,
   Box,
+  TextField,
 } from "@mui/material";
-import { styled } from "@mui/system";
 
 const StyledAppBar = styled(AppBar)({
   marginBottom: "1em",
@@ -30,9 +34,11 @@ const StyledAppBar = styled(AppBar)({
 const DynamicForm = () => {
   const navigate = useNavigate();
   const { tableName } = useParams();
+
+  console.log("tablename : %s", tableName);
   const [searchParams] = useSearchParams();
   const [sysID, setSysID] = useState(searchParams.get("sys_id"));
-  const [resp, setRes] = useState({});
+  // const [resp, setRes] = useState({});
   const [columns, setColumns] = useState([]);
   const [formData, setFormData] = useState({});
 
@@ -45,10 +51,14 @@ const DynamicForm = () => {
     if (sysID === "-1") {
       setFormData({ sys_id: -1 });
       document.title += " -- New Record";
-    } else document.title += " -- " + formData.sys_id;
+    } else document.title += " -- " + (formData.sys_id || sysID);
 
+    return () => {
+      // will run on every unmount.
+      console.log("component is unmounting");
+    };
     // eslint-disable-next-line
-  }, [tableName, sysID]);
+  }, []);
 
   //
   const getColumns = async () => {
@@ -56,7 +66,7 @@ const DynamicForm = () => {
     if (tableName) {
       try {
         const resp = await ApiService.getColumns(tableName);
-        setRes(resp);
+        // setRes(resp);
         setColumns(Object.keys(resp.data));
       } catch (error) {
         console.error("Error fetching table columns:", error);
@@ -133,45 +143,102 @@ const DynamicForm = () => {
     );
   };
 
+  const breadCrumbs = (list) => {
+    return (
+      <Breadcrumbs aria-label="breadcrumb">
+        <Link color="inherit" href="/">
+          Home
+        </Link>
+        <Link
+          color="inherit"
+          sx={{
+            textTransform: "capitalize",
+          }}
+          href={`/${list}.list`}
+        >
+          {list}s
+        </Link>
+        <Typography
+          sx={{
+            fontWeight: "bold",
+          }}
+          color="textPrimary"
+        >
+          Current page
+        </Typography>
+      </Breadcrumbs>
+    );
+  };
+
   const listHeader = (tableName) => {
     return (
       <StyledAppBar position="static" color="default">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {tableName}
+          <Typography
+            variant="h5"
+            sx={{
+              flexGrow: 1,
+              fontWeight: "bold",
+              textTransform: "capitalize",
+            }}
+          >
+            {tableName}s
           </Typography>
           <Typography variant="h8" sx={{ flexGrow: 1 }}>
             {sysID === "-1" ? "New Record" : `${formData.sys_id}`}
           </Typography>
           {renderButtons()}
         </Toolbar>
+        <Typography variant="h7" sx={{ flexGrow: 1, marginLeft: "10px" }}>
+          {breadCrumbs(tableName)}
+        </Typography>
       </StyledAppBar>
     );
   };
 
+  const isSysColumn = (column) => {
+    return column.startsWith("sys_");
+  };
+
   return (
-    <Box component="form" noValidate autoComplete="off" onSubmit={handleSubmit}>
+    <Box component="form" autoComplete="off" onSubmit={handleSubmit}>
       {listHeader(tableName)}
-      {columns.map((column) => (
-        <Stack key={column}>
-          <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-            <InputLabel htmlFor={`standard-adornment-${column}`}>
-              {column}
-            </InputLabel>
-            <Input
-              id={`standard-adornment-${column}`}
-              value={formData[column] || ""}
-              onChange={(e) => handleInputChange(column, e.target.value)}
-              startAdornment={
-                <InputAdornment position="start">
-                  {resp.data[column].type}
-                </InputAdornment>
-              }
-            />
-          </FormControl>
-        </Stack>
+      {columns.map((column, i) => (
+        <FormControl
+          help={console.log("column %i:  %s", i, column)}
+          fullWidth
+          sx={{ m: 1, maxWidth: "45%" }}
+          variant="outlined"
+        >
+          <Grid container spacing={2} direction="row">
+            <Grid item>
+              <InputLabel sx={{ width: "150", textAlign: "left" }}>
+                {column}
+              </InputLabel>
+            </Grid>
+            <Grid item>
+              <TextField
+                sx={{ width: 380, left: 150 }}
+                id={`standard-adornment-${column}`}
+                // disabled={column.startsWith("sys_")}
+                variant={isSysColumn(column) ? "filled" : FormControl.variant}
+                inputProps={{
+                  // Set the readOnly attribute to true
+                  readOnly: isSysColumn(column),
+                }}
+                value={formData[column] || ""}
+                onChange={(e) => handleInputChange(column, e.target.value)}
+                // startAdornment={
+                //   <InputAdornment position="start">
+                //     {resp.data[column].type}
+                //   </InputAdornment>
+                // }
+              />
+            </Grid>
+          </Grid>
+        </FormControl>
       ))}
-      {renderButtons()}
+      <Box sx={{ marginTop: "30px" }}>{renderButtons()}</Box>
     </Box>
   );
 };
