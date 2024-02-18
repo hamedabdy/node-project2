@@ -35,14 +35,18 @@ const DynamicForm = () => {
   const navigate = useNavigate();
   const { tableName } = useParams();
 
-  console.log("tablename : %s", tableName);
+  // console.log("tablename : %s", tableName);
   const [searchParams] = useSearchParams();
   const [sysID, setSysID] = useState(searchParams.get("sys_id"));
   // const [resp, setRes] = useState({});
   const [columns, setColumns] = useState([]);
   const [formData, setFormData] = useState({});
+  const [reloadData, setReloadData] = useState(false);
 
   useEffect(() => {
+    // Use useEffect to reset the state variable after the component has re-rendered
+    if (reloadData) setReloadData(false); // if page has reloaded then stop
+
     getColumns();
     if (sysID !== "-1") getData();
 
@@ -58,7 +62,7 @@ const DynamicForm = () => {
       console.log("component is unmounting");
     };
     // eslint-disable-next-line
-  }, []);
+  }, [reloadData]);
 
   //
   const getColumns = async () => {
@@ -105,6 +109,8 @@ const DynamicForm = () => {
       if (response.status === "success") {
         setSysID(response.sys_id);
         navigate(`?sys_id=${response.sys_id}`);
+        // After saving the form, update the state to trigger a re-render
+        setReloadData(true);
       }
     } catch (error) {
       console.error("Error inserting row:", error);
@@ -117,6 +123,8 @@ const DynamicForm = () => {
       const response = await ApiService.deleteData(tableName, sysID);
       if (response.status === "success") {
         navigate(-1);
+        // After saving the form, update the state to trigger a re-render
+        setReloadData(true);
       }
     } catch (error) {
       console.error("Error deleting row:", error);
@@ -205,7 +213,7 @@ const DynamicForm = () => {
       {listHeader(tableName)}
       {columns.map((column, i) => (
         <FormControl
-          help={console.log("column %i:  %s", i, column)}
+          // help={console.log("column %i:  %s", i, column)}
           fullWidth
           sx={{ m: 1, maxWidth: "45%" }}
           variant="outlined"

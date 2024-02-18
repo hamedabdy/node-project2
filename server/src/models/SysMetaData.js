@@ -29,7 +29,11 @@ module.exports = (sequelize) => {
         defaultValue: this.table_name,
       },
       sys_name: DataTypes.STRING(255),
-      sys_mod_count: DataTypes.INTEGER,
+      sys_mod_count: {
+        type: DataTypes.INTEGER(6),
+        allowNull: false,
+        defaultValue: 0,
+      },
       sys_scope: DataTypes.STRING(32),
       sys_update_name: DataTypes.STRING(255),
       sys_policy: DataTypes.STRING(40),
@@ -49,12 +53,13 @@ module.exports = (sequelize) => {
     }
 
     static async insertRow(data) {
+      data.sys_name = data.name;
       // unique 32-character sys_id. If already provided do not generate another
       data.sys_id = data.sys_id || utils.generateSysID();
 
       // set default values for sys_ columns
       data.sys_updated_by = data.sys_created_by = "system";
-      data.sys_updated_on = data.sys_created_on = this.sequelize.fn("NOW");
+      data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
 
       // Insert the new row
       return await SysMetaData.create(data)
@@ -113,12 +118,8 @@ module.exports = (sequelize) => {
           where: { sys_id: data.sys_id },
           returning: true,
         })
-          .then((result, deletedRecords) => {
-            console.log(
-              "Record deleted : %i\nRecords: %o",
-              result,
-              deletedRecords
-            );
+          .then((result) => {
+            console.log("SYSMETADA - Record deleted : %i", result);
             return { sys_id: result, status: "success", err: "" };
           })
           .catch((e) => {

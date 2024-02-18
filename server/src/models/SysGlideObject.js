@@ -2,6 +2,7 @@
 const { DataTypes, Model } = require("sequelize");
 
 // IMPORT SysMetaData Model class
+const _dataTypes = require("./dataTypes");
 // const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent) => {
@@ -18,6 +19,41 @@ module.exports = (sequelize, parent) => {
       name: DataTypes.STRING(80),
       label: DataTypes.STRING(80),
     };
+
+    static dataTypes = _dataTypes;
+
+    // Initialize data to be inserted into the table
+    // static initializationData = [
+    //   {
+    //     name: "string",
+    //     label: "String",
+    //     sys_updated_by: "system",
+    //     sys_created_by: "system",
+    //     sys_updated_on: sequelize.fn("NOW"),
+    //     sys_created_on: sequelize.fn("NOW"),
+    //   },
+    //   {
+    //     name: "boolean",
+    //     label: "True/False",
+    //     sys_updated_by: "system",
+    //     sys_created_by: "system",
+    //     sys_updated_on: sequelize.fn("NOW"),
+    //     sys_created_on: sequelize.fn("NOW"),
+    //   },
+    // ];
+
+    static async findBySysId(sysID) {
+      return await SysGlideObject.findOne({ where: { sys_id: sysID } })
+        .then((result) => {
+          var r = result;
+          if (!result) r = [];
+          return { data: r, status: "success", err: "" };
+        })
+        .catch((e) => {
+          console.error("SysGlideObject - findBySysId - Error : ", e);
+          return { data: "", status: "fail", err: e };
+        });
+    }
   }
 
   // Initialize the SysGlideObject class by calling the init method
@@ -47,6 +83,15 @@ module.exports = (sequelize, parent) => {
       },
     },
   });
+
+  // // Insert initialization data into the table
+  // SysGlideObject.bulkCreate(SysGlideObject.initializationData)
+  //   .then(() => {
+  //     console.log("Initialization data inserted successfully");
+  //   })
+  //   .catch((error) => {
+  //     console.error("Error inserting initialization data:", error);
+  //   });
 
   return SysGlideObject;
 };
