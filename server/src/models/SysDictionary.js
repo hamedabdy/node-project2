@@ -6,6 +6,7 @@ const Utils = require("../utils/utils");
 const { log } = require("util");
 const utils = new Utils();
 const SysGlideObject = require("./SysGlideObject");
+const { promises } = require("dns");
 // const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent) => {
@@ -67,6 +68,12 @@ module.exports = (sequelize, parent) => {
         });
     }
 
+    /**
+     *
+     * @param {string} tableName name of the table to remove column from
+     * @param {string} columnName name of column to remove
+     * @returns {object} {table, column, status: success | fail, err}
+     */
     static async removeColumn(tableName, columnName) {
       return sequelize
         .getQueryInterface()
@@ -98,20 +105,12 @@ module.exports = (sequelize, parent) => {
     }
 
     /**
-     *
-     * @param {object} options object containing the where attribute
+     * find a record using its sys_id
+     * @param {string} sysID unique id of the record to look for
+     * @returns {object}
      */
-    static async getRows(options) {
-      // Fetch records to be deleted and store relevant information
-      await SysDictionary.findAll(options).then((records) => {
-        this.deletedRecords = records;
-      });
-    }
-
-    // TODO : Methods : delete, MultipleDelete, findByID and findOne
-
     static async findBySysId(sysID) {
-      return await SysDictionary.findOne({ where: { sys_id: sysID } })
+      return await this.findOne({ where: { sys_id: sysID } })
         .then((result) => {
           var r = result;
           if (!result) r = [];
@@ -121,6 +120,69 @@ module.exports = (sequelize, parent) => {
           console.error("SysDictionary - findBySysId - Error : ", e);
           return { data: "", status: "fail", err: e };
         });
+    }
+
+    /**
+     * get all rows for given options
+     * @param {object} options sequelize options or query
+     * @returns {promises} array of object records or error
+     */
+    static async getRows(options) {
+      const no_count = utils.nil(options.no_count) ? false : true;
+      if (no_count) {
+        return await this.findAll(options)
+          .then((records) => {
+            console.log("sys_dcitionary - getRows - options: %o", options);
+            return {
+              rows: records,
+              count: records.length,
+            };
+          })
+          .catch((e) => {
+            console.error("SysDictionary - getRows - Error : ", e);
+            return e;
+          });
+      }
+      return await this.findAndCountAll(options)
+        .then((records) => {
+          console.log(
+            "sys_dcitionary - getRows - options: %o\ncount : %i",
+            options,
+            records.count
+          );
+          return records;
+        })
+        .catch((e) => {
+          console.error("SysDictionary - getRows - Error : ", e);
+          return e;
+        });
+    }
+
+    /**
+     * setter for setDeletedRecords. Get a list of records before being deleted
+     * @param {object} options object containing the where attribute
+     */
+    static async setDeletedRecords(options) {
+      // Fetch records to be deleted and store relevant information
+      await this.getRows(options).then((records) => {
+        this.deletedRecords = records;
+      });
+    }
+
+    // TODO : Methods : delete row, MultipleDelete rows
+
+    static async getAttribs(tableName, no_count) {
+      utils.warn("SysDictionary - getAttribs for table : %s", tableName);
+      // TODO add condition on type == collection
+      return await this.getRows({
+        where: { name: tableName },
+        no_count: no_count,
+      }).then((records) => {
+        return {
+          rows: records.rows.map((r) => r.dataValues),
+          count: records.count,
+        };
+      });
     }
 
     static async insertRow(data) {
@@ -133,7 +195,7 @@ module.exports = (sequelize, parent) => {
       data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
 
       // Insert the new row
-      return await SysDictionary.create(data)
+      return await this.create(data)
         .then((result) => {
           return {
             sys_id: result.dataValues.sys_id,
@@ -156,7 +218,10 @@ module.exports = (sequelize, parent) => {
       // No record found with the provided sys_id
       if (!instance) return [];
 
-      console.log("model : %o", model.dataValues);
+      console.log(
+        "sys_dictionary - updateColumn - model : %o",
+        model.dataValues
+      );
 
       const type = sysGlideObject.dataTypes[model.internal_type];
 
@@ -230,7 +295,7 @@ module.exports = (sequelize, parent) => {
       beforeBulkDestroy: (SysDictionaryModel) => {
         // Do something before destroying a SysDictionary instance
         console.log("\n\n BEFORE BULK DESTROY HOOK \n\n");
-        SysDictionary.getRows(SysDictionaryModel);
+        SysDictionary.setDeletedRecords(SysDictionaryModel);
       },
       afterBulkDestroy: () => {
         // Do something after destroying a SysDictionary instance

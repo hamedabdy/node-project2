@@ -115,14 +115,13 @@ class Sequelizer {
   }
 
   async getColumns(table_name) {
-    return await this.sequelize.queryInterface
-      .describeTable(table_name)
-      .then((tableDefinition) => {
+    return await this.sysDictionary
+      .getAttribs(table_name)
+      .then((rows) => {
         return {
           table: table_name,
-          data: tableDefinition,
+          data: rows,
           status: "success",
-          err: "",
         };
       })
       .catch((e) => {
@@ -131,46 +130,8 @@ class Sequelizer {
       });
   }
 
-  // async createColumn(tableName, columnName, length) {
-  //   // Add a column to the table
-  //   return this.sequelize
-  //     .getQueryInterface()
-  //     .addColumn(tableName, columnName, {
-  //       type: Sequelize.DataTypes.STRING(length), // replace with the data type of the column
-  //       allowNull: true, // replace with whether null values are allowed
-  //     })
-  //     .then(() => {
-  //       console.log("Column has been added.");
-  //       return { status: "success" };
-  //     })
-  //     .catch((error) => {
-  //       console.log("An error occurred: ", error);
-  //       return { status: "fail" };
-  //     });
-  // }
-
-  // async removeColumn(tableName, columnName) {
-  //   log(warning("table : %s --- col : %s"), tableName, columnName);
-  //   return this.sequelize
-  //     .getQueryInterface()
-  //     .removeColumn(tableName, columnName)
-  //     .then((result) => {
-  //       console.log("Column deleted : ", result);
-  //       return {
-  //         table: tableName,
-  //         column: columnName,
-  //         status: "success",
-  //         err: "",
-  //       };
-  //     })
-  //     .catch((e) => {
-  //       console.error("Remove Column error : ", e);
-  //       return { table: tableName, column: columnName, status: "fail", err: e };
-  //     });
-  // }
-
-  /*
-   * RECORD operations
+  /** RECORD operations
+   * @param {Object} req request object must contain table_name in params
    */
   async getRows(req) {
     const { table_name } = req.params;
@@ -222,7 +183,8 @@ class Sequelizer {
     }
 
     if (sys_id) {
-      return await Model.findOne({ where: { sys_id } })
+      console.log("insideeee if sysid : %s", sys_id);
+      return await Model.findByPk(sys_id, {})
         .then((result) => {
           return { data: [result], status: "success", err: "" };
         })

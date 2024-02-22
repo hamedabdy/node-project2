@@ -52,20 +52,6 @@ router.get("/columns/:table_name", async (req, res) => {
   }
 });
 
-// CREATE a COLUMN ==> TO BE CHANGED TO POST
-router.get("/create_column", async (req, res) => {
-  const { table, column, length } = req.query;
-  const result = await sequelizer.createColumn(table, column, length);
-  res.json(result);
-});
-
-// DELETE a COLUMN ==> TO BE CHANGED TO DELETE
-router.get("/delete_column", async (req, res) => {
-  const { table, column } = req.query;
-  const result = await sequelizer.removeColumn(table, column);
-  res.json(result);
-});
-
 // GET ROWS
 router.get("/rows/:table_name", async (req, res) => {
   try {

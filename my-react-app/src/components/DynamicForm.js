@@ -64,14 +64,35 @@ const DynamicForm = () => {
     // eslint-disable-next-line
   }, [reloadData]);
 
-  //
+  // // TODO event base form update when data changes at server side
+  // function MyComponent() {
+  //   const [data, setData] = useState(null);
+
+  //   useEffect(() => {
+  //     const source = new EventSource("http://localhost:8080/events");
+
+  //     source.onmessage = (event) => {
+  //       // The 'data' property of the event contains the text sent from the server
+  //       setData(event.data);
+  //     };
+
+  //     // Don't forget to close the connection when the component unmounts
+  //     return () => {
+  //       source.close();
+  //     };
+  //   }, []);
+
+  //   return <div>Data from server: {data}</div>;
+  // }
+
   const getColumns = async () => {
     // Fetch table columns when the selected table changes
     if (tableName) {
       try {
         const resp = await ApiService.getColumns(tableName);
+        console.log("resp : %o", resp);
         // setRes(resp);
-        setColumns(Object.keys(resp.data));
+        setColumns(resp.data.rows);
       } catch (error) {
         console.error("Error fetching table columns:", error);
       }
@@ -86,6 +107,7 @@ const DynamicForm = () => {
           tableName: tableName,
           sys_id: sysID,
         });
+        console.log("rest data : %o", resp.data);
         setFormData(resp.data.pop());
       } catch (error) {
         console.error("Error fetching table columns:", error);
@@ -211,9 +233,9 @@ const DynamicForm = () => {
   return (
     <Box component="form" autoComplete="off" onSubmit={handleSubmit}>
       {listHeader(tableName)}
-      {columns.map((column, i) => (
+      {columns.map((c, i) => (
         <FormControl
-          // help={console.log("column %i:  %s", i, column)}
+          // help={console.log("c %i:  %o", i, c)}
           fullWidth
           sx={{ m: 1, maxWidth: "45%" }}
           variant="outlined"
@@ -221,24 +243,26 @@ const DynamicForm = () => {
           <Grid container spacing={2} direction="row">
             <Grid item>
               <InputLabel sx={{ width: "150", textAlign: "left" }}>
-                {column}
+                {c.column_label} | {c.element}
               </InputLabel>
             </Grid>
             <Grid item>
               <TextField
                 sx={{ width: 380, left: 150 }}
-                id={`standard-adornment-${column}`}
-                // disabled={column.startsWith("sys_")}
-                variant={isSysColumn(column) ? "filled" : FormControl.variant}
+                id={`standard-adornment-${c.sys_id}`}
+                // disabled={c.startsWith("sys_")}
+                variant={
+                  isSysColumn(c.element) ? "filled" : FormControl.variant
+                }
                 inputProps={{
                   // Set the readOnly attribute to true
-                  readOnly: isSysColumn(column),
+                  readOnly: isSysColumn(c.element),
                 }}
-                value={formData[column] || ""}
-                onChange={(e) => handleInputChange(column, e.target.value)}
+                value={formData[c.element] || ""}
+                onChange={(e) => handleInputChange(c.element, e.target.value)}
                 // startAdornment={
                 //   <InputAdornment position="start">
-                //     {resp.data[column].type}
+                //     {resp.data[c].type}
                 //   </InputAdornment>
                 // }
               />

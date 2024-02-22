@@ -37,6 +37,7 @@ const ApiService = {
     const uri = `${tableApiUrl}/rows/${parms.tableName}`;
     try {
       const response = await axios.get(uri, { params: p });
+      console.log("resp data : %o", response);
       return response.data;
     } catch (error) {
       console.error("Error fetching data:", error);
