@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: this.table_name,
       },
-      sys_name: DataTypes.STRING(255),
+      sys_name: { type: DataTypes.STRING(255) },
       sys_mod_count: {
         type: DataTypes.INTEGER(6),
         allowNull: false,

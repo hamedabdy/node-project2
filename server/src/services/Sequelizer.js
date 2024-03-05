@@ -115,6 +115,22 @@ class Sequelizer {
   }
 
   async getColumns(table_name) {
+    return await this.sequelize.queryInterface
+      .describeTable(table_name)
+      .then((tableDefinition) => {
+        return {
+          table: table_name,
+          data: tableDefinition,
+          status: "success",
+        };
+      })
+      .catch((e) => {
+        console.error("Get columns error : ", e);
+        return { table: table_name, data: {}, status: "fail", err: e };
+      });
+  }
+
+  async getFields(table_name) {
     return await this.sysDictionary
       .getAttribs(table_name)
       .then((rows) => {

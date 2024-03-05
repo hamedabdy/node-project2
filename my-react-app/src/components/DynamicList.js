@@ -47,7 +47,8 @@ const DynamicList = () => {
     try {
       const cols = await ApiService.getColumns(tableName);
       const resp = await ApiService.getData({ tableName: tableName });
-      setColumns(Object.keys(cols.data));
+
+      setColumns(cols.data.rows);
       setData(resp.data);
     } catch (error) {
       console.log("Error in DynamicList: ", error);
@@ -100,25 +101,25 @@ const DynamicList = () => {
         <StyledTable stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
-              {columns.map((column) => (
-                <TableCell key={column}>{column}</TableCell>
+              {columns.map((c) => (
+                <TableCell key={c.element}>{c.column_label}</TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {data.map((row) => (
               <TableRow key={row.sys_id}>
-                {columns.map((column) => (
-                  <TableCell key={column}>
-                    {column === "sys_id" ? (
+                {columns.map((c) => (
+                  <TableCell key={c.element}>
+                    {c.element === "sys_id" ? (
                       <Link
                         component={ReactRouterLink}
-                        to={`/${tableName}.form?${column}=${row[column]}`}
+                        to={`/${tableName}.form?${c.element}=${row[c.element]}`}
                       >
-                        {row[column]}
+                        {row[c.element]}
                       </Link>
                     ) : (
-                      row[column]
+                      row[c.element]
                     )}
                   </TableCell>
                 ))}

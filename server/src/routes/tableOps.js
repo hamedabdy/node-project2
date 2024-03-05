@@ -44,7 +44,7 @@ router.get("/drop_table", async (req, res) => {
 router.get("/columns/:table_name", async (req, res) => {
   const { table_name } = req.params;
   try {
-    const result = await sequelizer.getColumns(table_name);
+    const result = await sequelizer.getFields(table_name);
     res.json(result);
   } catch (error) {
     console.error(error);

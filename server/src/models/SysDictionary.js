@@ -3,10 +3,8 @@ const { DataTypes, Model } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
-const { log } = require("util");
 const utils = new Utils();
 const SysGlideObject = require("./SysGlideObject");
-const { promises } = require("dns");
 // const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent) => {
@@ -22,6 +20,10 @@ module.exports = (sequelize, parent) => {
         defaultValue: this.table_name,
       },
       element: DataTypes.STRING(80),
+      sys_name: {
+        ...parent.attr.sys_name,
+        defaultValue: this.element,
+      },
       column_label: DataTypes.STRING(80),
       internal_type: DataTypes.STRING(32),
       name: DataTypes.STRING(80),
@@ -34,6 +36,8 @@ module.exports = (sequelize, parent) => {
       mandatory: DataTypes.BOOLEAN,
       unique: DataTypes.BOOLEAN,
     };
+
+    static deletedRecords = [];
 
     /**
      *
@@ -209,6 +213,7 @@ module.exports = (sequelize, parent) => {
         });
     }
 
+    //// TODO : boolean values should not be string
     static async updateColumn(model) {
       if (utils.nil(model)) return;
 
@@ -218,18 +223,15 @@ module.exports = (sequelize, parent) => {
       // No record found with the provided sys_id
       if (!instance) return [];
 
-      console.log(
-        "sys_dictionary - updateColumn - model : %o",
-        model.dataValues
-      );
-
       const type = sysGlideObject.dataTypes[model.internal_type];
 
       const queryInterface = sequelize.getQueryInterface();
       queryInterface.changeColumn(model.name, model.element, {
         type: type(model.max_length),
         unique: model.unique,
-        defaultValue: utils.nil(model.default_value) ? "" : model.default_value,
+        defaultValue: utils.nil(model.default_value)
+          ? false
+          : utils.bool(model.default_value),
       });
     }
 
@@ -306,7 +308,7 @@ module.exports = (sequelize, parent) => {
         const deletedCoulumn = SysDictionary.deletedRecords.pop();
         const tableName = deletedCoulumn.get("name");
         const deletedColumnName = deletedCoulumn.get("element");
-        const deletedTableSysId = deletedCoulumn.get("sys_id");
+        // const deletedTableSysId = deletedCoulumn.get("sys_id");
 
         SysDictionary.removeColumn(tableName, deletedColumnName);
       },

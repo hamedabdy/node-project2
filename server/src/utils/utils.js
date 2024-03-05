@@ -34,7 +34,13 @@ class Utils {
       (Array.isArray(attribute) && attribute.every((val) => val === null)) // Check if attribute is an array with only null values
     )
       return true;
-    else return false;
+    return false;
+  }
+
+  bool(value) {
+    if (value === 1 || value === "1" || value === "true" || value === true)
+      return true;
+    return false;
   }
 
   /**
