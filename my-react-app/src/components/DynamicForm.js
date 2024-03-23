@@ -29,6 +29,8 @@ import {
   // RadioGroup,
   // Autocomplete,
   FormControlLabel,
+  CircularProgress,
+  // LinearProgress,
 } from "@mui/material";
 
 const StyledAppBar = styled(AppBar)({
@@ -44,16 +46,17 @@ const DynamicForm = () => {
   const [formData, setFormData] = useState({});
   const [pageTitle, setPageTitle] = useState("");
   const [reloadData, setReloadData] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [checkboxes, setCheckboxes] = useState({});
 
   useEffect(() => {
     // Use useEffect to reset the state variable after the component has re-rendered
-    if (reloadData) setReloadData(false); // if page has reloaded then stop
-
-    initCheckBoxes();
 
     loadForm();
 
+    console.log("in use effect  : %o ", columns);
+
+    if (reloadData) setReloadData(false); // if page has reloaded then stop
     return () => {
       // will run on every unmount.
       // console.log("component is unmounting");
@@ -82,25 +85,37 @@ const DynamicForm = () => {
   //   return <div>Data from server: {data}</div>;
   // }
 
-  const initCheckBoxes = async () => {
+  const initCheckBoxes = () => {
+    console.log(columns); // Add this line
     const cbs = columns.reduce((acc, item) => {
-      if (item.internal_type === "boolean")
+      console.log("inside reduce");
+      if (item.internal_type === "boolean") {
+        console.log(" %o : %o", item.element, formData[item.element]);
         acc[item.element] = formData[item.element];
+      }
       return acc;
     }, {});
+
+    // Set the checkboxes and loading state after the reduce operation
     setCheckboxes(cbs);
+    setLoading(false);
   };
 
   const loadForm = async () => {
-    getColumns();
-    if (sysID !== "-1") getData();
+    await getColumns().then(() => {
+      if (sysID !== "-1")
+        getData().then(() => {
+          initCheckBoxes();
+        });
+    });
+
     // Set document title
     if (sysID === "-1") {
       setFormData({ sys_id: -1 });
       setPageTitle("New Record");
     } else setPageTitle(formData.sys_name || sysID);
     document.title = `${tableName} -- ${pageTitle}`;
-    // console.log("sys_name: %o", formData.sys_name);
+    console.log("sys_name: %o", formData.sys_name);
   };
 
   const getColumns = async () => {
@@ -109,6 +124,11 @@ const DynamicForm = () => {
       try {
         const resp = await ApiService.getColumns(tableName);
         setColumns(resp.data.rows);
+        console.log("inside getcolumns : %o ", resp.data.rows); // Add this line
+        return new Promise((resolve, reject) => {
+          resolve(resolve);
+          reject(reject);
+        });
       } catch (error) {
         console.error("Error fetching table columns:", error);
       }
@@ -116,6 +136,7 @@ const DynamicForm = () => {
   };
 
   const getData = async () => {
+    console.log("inside getdata : %o ", columns); // Add this line
     // Fetch table columns when the selected table changes
     if (tableName && sysID) {
       try {
@@ -124,6 +145,10 @@ const DynamicForm = () => {
           sys_id: sysID,
         });
         setFormData(resp.data.pop());
+        return new Promise((resolve, reject) => {
+          resolve(resolve);
+          reject(reject);
+        });
       } catch (error) {
         console.error("Error fetching table columns:", error);
       }
@@ -359,10 +384,10 @@ const DynamicForm = () => {
 
   const handleCbChange = (event) => {
     setCheckboxes({ ...checkboxes, [event.target.name]: event.target.checked });
-    // Here you can also update the value in the database
   };
 
   const checkbox = (c) => {
+    console.log("checkbox value : %s -- %s", c.element, checkboxes[c.element]);
     return (
       <Grid item>
         <FormControlLabel
@@ -370,25 +395,42 @@ const DynamicForm = () => {
           control={
             <Checkbox
               name={c.element}
-              defaultChecked={
-                // eslint-disable-next-line
-                formData["sys_id"] !== -1
-                  ? formData[c.element] == 1
+              checked={
+                checkboxes[c.element] !== -1
+                  ? // eslint-disable-next-line
+                    checkboxes[c.element] === true
                   : c.default_value === "true"
               }
+              disabled={false}
               size="large"
-              // checked={formData[c.element] === 1 || false}
-              // checked={checkboxes[c.element] || false}
               onChange={handleCbChange}
             />
           }
           label={c.column_label}
         />
-        {/* <FormControlLabel required control={<Checkbox />} label="Required" />
-      <FormControlLabel disabled control={<Checkbox />} label="Disabled" /> */}
       </Grid>
     );
   };
+
+  if (loading) {
+    return (
+      <Box>
+        <CircularProgress name="progressBar" title="progressBar" />
+        <Typography
+          variant="h6"
+          sx={{
+            flexGrow: 1,
+            display: "inline-block",
+            left: "10px",
+            position: "relative",
+            top: "-12px",
+          }}
+        >
+          Loading ...
+        </Typography>
+      </Box>
+    ); // Or any other loading indicator
+  }
 
   return (
     <Box component="form" autoComplete="off" onSubmit={handleSubmit}>
