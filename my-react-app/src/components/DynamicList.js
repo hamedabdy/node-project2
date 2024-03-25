@@ -1,45 +1,62 @@
+import PropTypes from "prop-types"; // data type checking
 import React, { useState, useEffect } from "react";
 import { useParams, Link as ReactRouterLink } from "react-router-dom";
-// import PropTypes from "prop-types"; // data type checking
 
 import ApiService from "../services/ApiService";
 
 // Styles
-import {
-  AppBar,
-  Box,
-  Toolbar,
-  Typography,
-  Button,
-  Breadcrumbs,
-  Link,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Paper,
-  // Stack,
-  // ListSubheader,
-  CircularProgress,
-  Grid,
-  TablePagination,
-  TableSortLabel,
-  Checkbox,
-  IconButton,
-  Tooltip,
-  FormControlLabel,
-  Switch,
-  TextField,
-} from "@mui/material";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+// import Breadcrumbs from "@mui/material/Breadcrumbs";
+import Link from "@mui/material/Link";
+import TableContainer from "@mui/material/TableContainer";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import TableBody from "@mui/material/TableBody";
+import Paper from "@mui/material/Paper";
+// import Stack from "@mui/material/Stack";
+// import ListSubheader from "@mui/material/ListSubheader";
+import CircularProgress from "@mui/material/CircularProgress";
+import Grid from "@mui/material/Grid";
+import TablePagination from "@mui/material/TablePagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
+import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 // import { styled } from "@mui/system";
-import PropTypes from "prop-types";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { visuallyHidden } from "@mui/utils";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
+// import FilterListIcon from "@mui/icons-material/FilterList";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+
+// IMPORT LOCAL COMPONENTS
+import EnhancedToolbar from "./dynamicList/EnhancedToolbar";
+import QueryFilter from "./dynamicList/QueryFilter";
+import EnhancedTableHead from "./dynamicList/EnhanceTableHead";
+import EnhancedTableBody from "./dynamicList/EnhancedTableBody";
+import TablePaginationActions from "./dynamicList/EnhancedTablePagination";
+import Utils from "./dynamicList/Utils";
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -77,14 +94,13 @@ const DynamicList = () => {
   const { tableName } = useParams();
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
-  const [order, setOrder] = React.useState("asc");
-  const [orderBy, setOrderBy] = React.useState("sys_id");
-  const [selected, setSelected] = React.useState([]);
-  const [page, setPage] = React.useState(0);
-  const [dense, setDense] = React.useState(true);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("sys_id");
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [dense, setDense] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
   const [isLoading, setLoading] = useState(true);
-  const [showFilterQuery, setShowFilterQuery] = useState(false);
 
   useEffect(() => {
     console.log("Start of useEffect !");
@@ -104,6 +120,7 @@ const DynamicList = () => {
     };
 
     getData();
+
     return () => {
       console.log("unmounting useffect");
     };
@@ -111,6 +128,7 @@ const DynamicList = () => {
   }, [tableName]);
 
   const handleRequestSort = (event, property) => {
+    console.log("handleRequestSort is called %o", property);
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -165,275 +183,12 @@ const DynamicList = () => {
 
   const visibleRows = React.useMemo(
     () =>
-      stableSort(data, getComparator(order, orderBy)).slice(
+      Utils.stableSort(data, Utils.getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
       ),
     [order, orderBy, page, rowsPerPage, data]
   );
-
-  const filterListIconClick = () => {
-    setShowFilterQuery(!showFilterQuery);
-  };
-
-  function EnhancedTableToolbar(props) {
-    const { numSelected, tableName } = props;
-    return (
-      <AppBar
-        elevation={1}
-        color="default"
-        sx={{ position: "relative", zIndex: "100" }}
-      >
-        <Toolbar
-          sx={{
-            pl: { sm: 2 },
-            pr: { xs: 1, sm: 1 },
-            ...(numSelected > 0 && {
-              bgcolor: (theme) =>
-                alpha(
-                  theme.palette.primary.main,
-                  theme.palette.action.activatedOpacity
-                ),
-            }),
-          }}
-        >
-          {numSelected > 0 ? (
-            <Typography
-              sx={{ flex: "1 1 100%" }}
-              color="inherit"
-              variant="subtitle1"
-              component="div"
-            >
-              {numSelected} selected
-            </Typography>
-          ) : (
-            <Typography
-              sx={{
-                flex: "1 1 100%",
-                fontWeight: "bold",
-                textTransform: "capitalize",
-              }}
-              variant="h5"
-              id="tableTitle"
-              component="div"
-            >
-              {tableName}s
-            </Typography>
-          )}
-
-          {numSelected > 0 ? (
-            <Tooltip title="Delete">
-              <IconButton>
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          ) : (
-            <></>
-          )}
-          {/* Add your dropdown list here */}
-          <Button variant="contained" href={`/${tableName}.form?sys_id=-1`}>
-            New
-          </Button>
-        </Toolbar>
-        <Typography variant="h7" sx={{ flexGrow: 1, marginLeft: "10px" }}>
-          <BreadCrumbs />
-        </Typography>
-      </AppBar>
-    );
-  }
-
-  const QueryFilter = (props) => {
-    return (
-      <Paper>
-        <Grid container>
-          <Paper>
-            <Tooltip title="Filter list">
-              <IconButton onClick={filterListIconClick}>
-                <FilterListIcon />
-              </IconButton>
-            </Tooltip>
-            {"queryValue"}
-          </Paper>
-        </Grid>
-        <Grid container sx={{ display: showFilterQuery ? "grid" : "none" }}>
-          <Paper>
-            <Button variant="outlined" label="Run filter">
-              Run filter
-            </Button>
-          </Paper>
-          <Paper>
-            <TextField label="Field" size="small" />
-            <TextField label="Operator" size="small" />
-            <TextField label="Value" size="small" />
-            <Button variant="outlined" label="OR">
-              OR
-            </Button>
-            <Button variant="outlined" label="AND">
-              AND
-            </Button>
-            <Tooltip title="Remove condition">
-              <IconButton onClick={filterListIconClick}>
-                <RemoveCircleOutlineIcon />
-              </IconButton>
-            </Tooltip>
-          </Paper>
-        </Grid>
-      </Paper>
-    );
-  };
-
-  const BreadCrumbs = () => {
-    return (
-      <Breadcrumbs aria-label="breadcrumb">
-        {/* Add your breadcrumb items here */}
-        <Link color="inherit" href="/">
-          Home
-        </Link>
-        <Typography color="textPrimary">Current page</Typography>
-      </Breadcrumbs>
-    );
-  };
-
-  function EnhancedTableHead(props) {
-    const {
-      onSelectAllClick,
-      order,
-      orderBy,
-      numSelected,
-      rowCount,
-      onRequestSort,
-    } = props;
-    const createSortHandler = (property) => (event) => {
-      onRequestSort(event, property);
-    };
-
-    return (
-      <TableHead>
-        <TableRow>
-          <TableCell padding="checkbox">
-            <Checkbox
-              color="primary"
-              indeterminate={numSelected > 0 && numSelected < rowCount}
-              checked={rowCount > 0 && numSelected === rowCount}
-              onChange={onSelectAllClick}
-              inputProps={{
-                "aria-label": "select all records",
-              }}
-            />
-          </TableCell>
-          {columns.map((c) => (
-            <TableCell
-              key={c.sys_id}
-              // align={headCell.numeric ? 'right' : 'left'}
-              // padding={headCell.disablePadding ? 'none' : 'normal'}
-              sortDirection={orderBy === c.sys_id ? order : false}
-            >
-              <TableSortLabel
-                active={orderBy === c.sys_id}
-                direction={orderBy === c.sys_id ? order : "asc"}
-                onClick={createSortHandler(c.sys_id)}
-              >
-                {c.column_label}
-                {orderBy === c.sys_id ? (
-                  <Box component="span" sx={visuallyHidden}>
-                    {order === "desc"
-                      ? "sorted descending"
-                      : "sorted ascending"}
-                  </Box>
-                ) : null}
-              </TableSortLabel>
-            </TableCell>
-          ))}
-        </TableRow>
-      </TableHead>
-    );
-  }
-
-  EnhancedTableHead.propTypes = {
-    numSelected: PropTypes.number.isRequired,
-    onRequestSort: PropTypes.func.isRequired,
-    onSelectAllClick: PropTypes.func.isRequired,
-    order: PropTypes.oneOf(["asc", "desc"]).isRequired,
-    orderBy: PropTypes.string.isRequired,
-    rowCount: PropTypes.number.isRequired,
-  };
-
-  function EnhancedTableBody(props) {
-    const { visibleRows, columns, isSelected, handleClick } = props;
-    return (
-      <TableBody>
-        {visibleRows.map((row, index) => {
-          const isItemSelected = isSelected(row.sys_id);
-          const labelId = `enhanced-table-checkbox-${index}`;
-          return (
-            <TableRow
-              hover
-              // onClick={(event) => handleClick(event, row.sys_id)}
-              role="checkbox"
-              aria-checked={isItemSelected}
-              tabIndex={-1}
-              selected={isItemSelected}
-              sx={{ cursor: "default" }}
-              key={row.sys_id}
-            >
-              <TableCell padding="checkbox">
-                <Checkbox
-                  onClick={(event) => handleClick(event, row.sys_id)}
-                  color="primary"
-                  checked={isItemSelected}
-                  inputProps={{
-                    "aria-labelledby": labelId,
-                  }}
-                />
-              </TableCell>
-              {columns.map((c, i) => (
-                <React.Fragment>
-                  {c.element !== "sys_id" ? (
-                    <TableCell key={`${c.element}_${c.sys_id}`}>
-                      {row[c.element]}
-                    </TableCell>
-                  ) : (
-                    <TableCell
-                      key={`${c.element}_${c.sys_id}`}
-                      component="th"
-                      id={labelId}
-                      scope="row"
-                      padding="none"
-                    >
-                      <Link
-                        component={ReactRouterLink}
-                        to={`/${tableName}.form?${c.element}=${row[c.element]}`}
-                      >
-                        {row[c.element]}
-                      </Link>
-                    </TableCell>
-                  )}
-                </React.Fragment>
-              ))}
-            </TableRow>
-          );
-        })}
-        {emptyRows > 0 && (
-          <TableRow
-            style={{
-              height: (dense ? 33 : 53) * emptyRows,
-            }}
-          >
-            <TableCell colSpan={6} />
-          </TableRow>
-        )}
-      </TableBody>
-    );
-  }
-
-  EnhancedTableBody.propTypes = {
-    columns: PropTypes.array.isRequired,
-    visibleRows: PropTypes.array.isRequired,
-    isSelected: PropTypes.func.isRequired,
-    // order: PropTypes.oneOf(["asc", "desc"]).isRequired,
-    // orderBy: PropTypes.string.isRequired,
-    handleClick: PropTypes.func.isRequired,
-  };
 
   return (
     <>
@@ -456,7 +211,7 @@ const DynamicList = () => {
       ) : (
         <Box sx={{ width: "100%" }}>
           <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
-            <EnhancedTableToolbar
+            <EnhancedToolbar
               numSelected={selected.length}
               tableName={tableName}
             />
@@ -473,6 +228,8 @@ const DynamicList = () => {
                 size={dense ? "small" : "medium"}
               >
                 <EnhancedTableHead
+                  columns={columns}
+                  visibleRows={visibleRows}
                   numSelected={selected.length}
                   order={order}
                   orderBy={orderBy}
@@ -485,17 +242,19 @@ const DynamicList = () => {
                   visibleRows={visibleRows}
                   isSelected={isSelected}
                   handleClick={handleClick}
+                  emptyRows={emptyRows}
                 />
               </Table>
             </TableContainer>
             <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
               component="div"
               count={data.length}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
+              ActionsComponent={TablePaginationActions}
             />
           </Paper>
           <FormControlLabel

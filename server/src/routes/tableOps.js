@@ -40,11 +40,23 @@ router.get("/drop_table", async (req, res) => {
   res.json(result);
 });
 
-// GET COLUMNS
+// GET FIELDS
 router.get("/columns/:table_name", async (req, res) => {
   const { table_name } = req.params;
   try {
     const result = await sequelizer.getFields(table_name);
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// AUX GET COLUMNS
+router.get("/descTable/:table_name", async (req, res) => {
+  const { table_name } = req.params;
+  try {
+    const result = await sequelizer.getColumns(table_name);
     res.json(result);
   } catch (error) {
     console.error(error);
