@@ -1,6 +1,5 @@
 import PropTypes from "prop-types"; // data type checking
 import React, { useState } from "react";
-import { Link as ReactRouterLink } from "react-router-dom";
 
 // Styles
 import Box from "@mui/material/Box";
@@ -80,7 +79,7 @@ const EnhancedTableHead = (props) => {
         </TableCell>
         {columns.map((c) => (
           <TableCell
-            key={c.sys_id}
+            key={`table-head-label-${c.sys_id}`}
             // align={headCell.numeric ? 'right' : 'left'}
             // padding={headCell.disablePadding ? 'none' : 'normal'}
             sortDirection={orderBy === c.element ? order : false}
@@ -90,10 +89,15 @@ const EnhancedTableHead = (props) => {
               direction={orderBy === c.element ? order : "asc"}
               onClick={createSortHandler(c.element)}
               sx={{ fontSize: "11pt", fontWeight: "600" }}
+              key={`table-head-sort-label-${c.sys_id}`}
             >
               {c.column_label}
               {orderBy === c.element ? (
-                <Box component="span" sx={visuallyHidden}>
+                <Box
+                  component="span"
+                  sx={visuallyHidden}
+                  key={`table-head-sort-span-${c.sys_id}`}
+                >
                   {order === "desc" ? "sorted descending" : "sorted ascending"}
                 </Box>
               ) : null}
@@ -102,10 +106,16 @@ const EnhancedTableHead = (props) => {
         ))}
       </TableRow>
       <TableRow sx={{ display: showLocalFilter ? "" : "none" }}>
-        <TableCell padding="checkbox"></TableCell>
-        <TableCell padding="checkbox"></TableCell>
+        <TableCell
+          padding="checkbox"
+          sx={{ backgroundColor: "#EFEFEF" }}
+        ></TableCell>
+        <TableCell
+          padding="checkbox"
+          sx={{ backgroundColor: "#EFEFEF" }}
+        ></TableCell>
         {columns.map((c) => (
-          <TableCell>
+          <TableCell sx={{ backgroundColor: "#EFEFEF" }}>
             <TextField
               key={`local-filter-${c.sys_id}`}
               size="small"

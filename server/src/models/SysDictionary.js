@@ -283,6 +283,7 @@ module.exports = (sequelize, parent) => {
         // Do something after creating a new SysDictionary instance
         console.log("\n\n AFTER CREATE HOOK \n\n");
         SysDictionary.createColumn(SysDictionaryModel);
+        // Create an application file
       },
       beforeUpdate: (SysDictionaryModel, options) => {
         // Do something before updating a SysDictionary instance

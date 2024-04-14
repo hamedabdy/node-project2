@@ -34,9 +34,10 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
-      sys_scope: DataTypes.STRING(32),
+      // sys_scope: DataTypes.STRING(32),
       sys_update_name: DataTypes.STRING(255),
-      sys_policy: DataTypes.STRING(40),
+      // sys_policy: DataTypes.STRING(40),
+      // sys_package: DataTypes.STRING(32),
     };
 
     static async findBySysId(sysID) {

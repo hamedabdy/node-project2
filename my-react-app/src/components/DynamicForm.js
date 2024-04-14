@@ -28,6 +28,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 // import LinearProgress from "@mui/material/LinearProgress";
 
 import { styled } from "@mui/system";
+import { Paper } from "@mui/material";
 // import SaveIcon from "@mui/icons-material/Save";
 // import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -46,13 +47,36 @@ const DynamicForm = () => {
   const [reloadData, setReloadData] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkboxes, setCheckboxes] = useState({});
+  const [selected, setSelected] = useState([]);
 
   useEffect(() => {
+    console.log("Start of useEffet !");
     // Use useEffect to reset the state variable after the component has re-rendered
 
-    loadForm();
+    const loadPage = async () => {
+      try {
+        if (tableName) {
+          const cols = await ApiService.getColumns(tableName);
+          setColumns(cols.data.rows);
 
-    console.log("in use effect  : %o ", columns);
+          if (sysID && sysID !== "-1") {
+            const resp = await ApiService.getData({
+              tableName: tableName,
+              sys_id: sysID,
+            });
+            setFormData(resp.data.pop());
+          }
+          setLoading(false);
+        }
+        // console.log("inside getcolumns : %o ", resp.data.rows); // Add this line
+      } catch (error) {
+        console.error("Error loading page:", error);
+      }
+    };
+
+    loadPage();
+
+    // loadForm();
 
     if (reloadData) setReloadData(false); // if page has reloaded then stop
     return () => {
@@ -60,7 +84,7 @@ const DynamicForm = () => {
       // console.log("component is unmounting");
     };
     // eslint-disable-next-line
-  }, []);
+  }, [tableName, sysID]);
 
   // // TODO event base form update when data changes at server side
   // function MyComponent() {
@@ -83,75 +107,75 @@ const DynamicForm = () => {
   //   return <div>Data from server: {data}</div>;
   // }
 
-  const initCheckBoxes = () => {
-    console.log(columns); // Add this line
-    const cbs = columns.reduce((acc, item) => {
-      console.log("inside reduce");
-      if (item.internal_type === "boolean") {
-        console.log(" %o : %o", item.element, formData[item.element]);
-        acc[item.element] = formData[item.element];
-      }
-      return acc;
-    }, {});
+  // const initCheckBoxes = () => {
+  //   console.log(columns); // Add this line
+  //   const cbs = columns.reduce((acc, item) => {
+  //     console.log("inside reduce");
+  //     if (item.internal_type === "boolean") {
+  //       console.log(" %o : %o", item.element, formData[item.element]);
+  //       acc[item.element] = formData[item.element];
+  //     }
+  //     return acc;
+  //   }, {});
 
-    // Set the checkboxes and loading state after the reduce operation
-    setCheckboxes(cbs);
-    setLoading(false);
-  };
+  //   // Set the checkboxes and loading state after the reduce operation
+  //   setCheckboxes(cbs);
+  //   setLoading(false);
+  // };
 
-  const loadForm = async () => {
-    await getColumns().then(() => {
-      if (sysID !== "-1")
-        getData().then(() => {
-          initCheckBoxes();
-        });
-    });
+  // const loadForm = async () => {
+  //   await getColumns().then(() => {
+  //     if (sysID !== "-1")
+  //       getData().then(() => {
+  //         initCheckBoxes();
+  //       });
+  //   });
 
-    // Set document title
-    if (sysID === "-1") {
-      setFormData({ sys_id: -1 });
-      setPageTitle("New Record");
-    } else setPageTitle(formData.sys_name || sysID);
-    document.title = `${tableName} -- ${pageTitle}`;
-    console.log("sys_name: %o", formData.sys_name);
-  };
+  //   // Set document title
+  //   if (sysID === "-1") {
+  //     setFormData({ sys_id: -1 });
+  //     setPageTitle("New Record");
+  //   } else setPageTitle(formData.sys_name || sysID);
+  //   document.title = `${tableName} -- ${pageTitle}`;
+  //   console.log("sys_name: %o", formData.sys_name);
+  // };
 
-  const getColumns = async () => {
-    // Fetch table columns when the selected table changes
-    if (tableName) {
-      try {
-        const resp = await ApiService.getColumns(tableName);
-        setColumns(resp.data.rows);
-        console.log("inside getcolumns : %o ", resp.data.rows); // Add this line
-        return new Promise((resolve, reject) => {
-          resolve(resolve);
-          reject(reject);
-        });
-      } catch (error) {
-        console.error("Error fetching table columns:", error);
-      }
-    }
-  };
+  // const getColumns = async () => {
+  //   // Fetch table columns when the selected table changes
+  //   if (tableName) {
+  //     try {
+  //       const resp = await ApiService.getColumns(tableName);
+  //       setColumns(resp.data.rows);
+  //       console.log("inside getcolumns : %o ", resp.data.rows); // Add this line
+  //       return new Promise((resolve, reject) => {
+  //         resolve(resolve);
+  //         reject(reject);
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching table columns:", error);
+  //     }
+  //   }
+  // };
 
-  const getData = async () => {
-    console.log("inside getdata : %o ", columns); // Add this line
-    // Fetch table columns when the selected table changes
-    if (tableName && sysID) {
-      try {
-        const resp = await ApiService.getData({
-          tableName: tableName,
-          sys_id: sysID,
-        });
-        setFormData(resp.data.pop());
-        return new Promise((resolve, reject) => {
-          resolve(resolve);
-          reject(reject);
-        });
-      } catch (error) {
-        console.error("Error fetching table columns:", error);
-      }
-    }
-  };
+  // const getData = async () => {
+  //   // console.log("inside getdata : %o ", columns); // Add this line
+  //   // Fetch table columns when the selected table changes
+  //   if (tableName && sysID) {
+  //     try {
+  //       const resp = await ApiService.getData({
+  //         tableName: tableName,
+  //         sys_id: sysID,
+  //       });
+  //       setFormData(resp.data.pop());
+  //       return new Promise((resolve, reject) => {
+  //         resolve(resolve);
+  //         reject(reject);
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching table columns:", error);
+  //     }
+  //   }
+  // };
 
   const handleInputChange = (columnName, value) => {
     // Update form data when input values change
@@ -190,12 +214,8 @@ const DynamicForm = () => {
 
     setFormData(fd);
 
-    console.log("formdata : %o", formData);
-
-    // return;
     try {
       // Send a request to your API to insert a new row
-
       const response = await ApiService.addData(tableName, formData);
       console.log("sent data - response :  %o", response);
       if (response.status === "success") {
@@ -229,7 +249,7 @@ const DynamicForm = () => {
     const dir = !direction ? "row" : direction;
     return (
       <Stack direction={dir} spacing={2}>
-        <Button type="submit" variant="contained" disableElevation size="large">
+        <Button type="submit" variant="contained" disableElevation size="small">
           Save
         </Button>
         <Button
@@ -237,7 +257,7 @@ const DynamicForm = () => {
           variant="contained"
           // color="secondary"
           disableElevation
-          size="large"
+          size="small"
           onClick={insertAndStay}
         >
           Insert and stay
@@ -247,7 +267,7 @@ const DynamicForm = () => {
           variant="contained"
           color="error"
           disableElevation
-          size="large"
+          size="small"
           onClick={handleDelete}
         >
           Delete
@@ -256,7 +276,8 @@ const DynamicForm = () => {
     );
   };
 
-  const breadCrumbs = (list) => {
+  const BreadCrumbs = (props) => {
+    const { tableName } = props;
     return (
       <Breadcrumbs aria-label="breadcrumb">
         <Link color="inherit" href="/">
@@ -267,9 +288,9 @@ const DynamicForm = () => {
           sx={{
             textTransform: "capitalize",
           }}
-          href={`/${list}.list`}
+          href={`/${tableName}.list`}
         >
-          {list}s
+          {tableName}s
         </Link>
         <Typography
           sx={{
@@ -283,55 +304,35 @@ const DynamicForm = () => {
     );
   };
 
-  const listHeader = (tableName) => {
+  const PageHeader = (props) => {
+    const { tableName } = props;
     return (
-      <StyledAppBar position="static" color="default">
-        <Toolbar>
-          <Typography
-            variant="h5"
-            sx={{
-              flexGrow: 1,
-              fontWeight: "bold",
-              textTransform: "capitalize",
-            }}
-          >
-            {tableName}s
-          </Typography>
-          <Typography variant="h8" sx={{ flexGrow: 1 }}>
-            {pageTitle}
-          </Typography>
-          {renderButtons()}
-        </Toolbar>
-        <Typography variant="h7" sx={{ flexGrow: 1, marginLeft: "10px" }}>
-          {breadCrumbs(tableName)}
-        </Typography>
-      </StyledAppBar>
+      <Paper elevation={1}>
+        <StyledAppBar position="static" color="default" elevation={1}>
+          <Toolbar>
+            <Typography
+              variant="h7"
+              sx={{
+                flexGrow: 1,
+                fontWeight: "bold",
+                textTransform: "capitalize",
+              }}
+            >
+              {tableName}s
+            </Typography>
+            <Typography variant="h8" sx={{ flexGrow: 1 }}>
+              {pageTitle}
+            </Typography>
+            {renderButtons()}
+          </Toolbar>
+        </StyledAppBar>
+        <BreadCrumbs tableName={tableName} />
+      </Paper>
     );
   };
 
   const isSysColumn = (column) => {
     return column.startsWith("sys_");
-  };
-
-  const formContainer = (c) => {
-    return (
-      <Grid container spacing={2} direction="row">
-        {/* {(() => {
-          switch (c.internal_type) {
-            case "boolean":
-              return checkbox(c);
-            case "string":
-              return inputLabel(c), textField(c);
-            default:
-              return <p>Loading...</p>;
-          }
-        })()} */}
-
-        {/* {c.internal_type !== "boolean" ? inputLabel(c) : ""} */}
-        {/* {c.internal_type !== "boolean" ? textField(c) : ""} */}
-        {c.internal_type === "boolean" ? checkbox(c) : textField(c)}
-      </Grid>
-    );
   };
 
   // const inputLabel = (c) => {
@@ -344,38 +345,39 @@ const DynamicForm = () => {
   //   );
   // };
 
-  const textField = (c) => {
+  const EnhancedTextField = (props) => {
+    const { c, formData, handleInputChange } = props;
     return (
-      <Grid item>
-        <TextField
-          // sx={{ width: 380, left: 150 }}
-          label={`${c.column_label} | ${c.element}`}
-          sx={{
-            width: 380,
-            textAlign: "left",
-            "& label.Mui-focused": {
-              color: "tomato",
-            },
-            "& .MuiInput-underline:after": {
-              borderBottomColor: "tomato",
-            },
-          }}
-          id={`standard-adornment-${c.sys_id}`}
-          name={c.element}
-          // disabled={c.startsWith("sys_")}
-          variant={isSysColumn(c.element) ? "filled" : FormControl.variant}
-          inputProps={{
-            // Set the readOnly attribute to true
-            readOnly: isSysColumn(c.element),
-          }}
-          value={formData[c.element] || ""}
-          onChange={(e) => handleInputChange(c.element, e.target.value)}
-          // startAdornment={
-          //   <InputAdornment position="start">
-          //     {c.internal_type}
-          //   </InputAdornment>
-          // }
-        />
+      <Grid container alignItems="center">
+        <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
+          <Typography>{c.column_label}</Typography>
+        </Grid>
+        <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
+          <FormControl fullWidth variant="outlined">
+            <TextField
+              fullWidth
+              // label={`${c.column_label} | ${c.element}`}
+              sx={{
+                "& label.Mui-focused": {
+                  color: "tomato",
+                },
+                "& .MuiInput-underline:after": {
+                  borderBottomColor: "tomato",
+                },
+              }}
+              id={`form-textfield-${c.sys_id}`}
+              name={c.element}
+              variant={isSysColumn(c.element) ? "filled" : FormControl.variant}
+              // inputProps={{
+              //   // Set the readOnly attribute to true
+              //   readOnly: isSysColumn(c.element),
+              // }}
+              value={formData[c.element] || ""}
+              onChange={(e) => handleInputChange(c.element, e.target.value)}
+              size="small"
+            />
+          </FormControl>
+        </Grid>
       </Grid>
     );
   };
@@ -384,67 +386,148 @@ const DynamicForm = () => {
     setCheckboxes({ ...checkboxes, [event.target.name]: event.target.checked });
   };
 
-  const checkbox = (c) => {
-    console.log("checkbox value : %s -- %s", c.element, checkboxes[c.element]);
+  const isSelected = (id) => selected.indexOf(id) !== -1;
+
+  const handleClick = (event, id) => {
+    const selectedIndex = selected.indexOf(id);
+    let newSelected = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+    setSelected(newSelected);
+  };
+
+  const EnhancedCheckBox = (props) => {
+    const { c, isSelected, handleCheckboxClick } = props;
+    const isBoxChecked = isSelected(c.element);
     return (
-      <Grid item>
-        <FormControlLabel
-          required={c.mandatory === 1 || false}
-          control={
-            <Checkbox
-              name={c.element}
-              checked={
-                checkboxes[c.element] !== -1
-                  ? // eslint-disable-next-line
-                    checkboxes[c.element] === true
-                  : c.default_value === "true"
-              }
-              disabled={false}
-              size="large"
-              onChange={handleCbChange}
-            />
-          }
-          label={c.column_label}
-        />
+      <Grid container alignItems="center">
+        <Grid item xs={4} key={`grid-checkbox-label-${c.sys_id}`}>
+          <Typography key={`checkbox-label-${c.element}`}>
+            {c.column_label}
+          </Typography>
+        </Grid>
+        <Grid item xs={8} key={`grid-checkbox-${c.sys_id}`}>
+          <FormControlLabel
+            required={c.mandatory === 1 || false}
+            control={
+              <Checkbox
+                name={c.element}
+                checked={isBoxChecked}
+                // checked={
+                //   checkboxes[c.element] !== -1
+                //     ? // eslint-disable-next-line
+                //       checkboxes[c.element] === true
+                //     : c.default_value === "true"
+                // }
+                // disabled={false}
+                size="medium"
+                onChange={handleCheckboxClick}
+                key={`checkbox-${c.sys_id}`}
+              />
+            }
+            // label={c.column_label}
+          />
+        </Grid>
       </Grid>
     );
   };
 
-  if (loading) {
-    return (
-      <Box>
-        <CircularProgress name="progressBar" title="progressBar" />
-        <Typography
-          variant="h6"
-          sx={{
-            flexGrow: 1,
-            display: "inline-block",
-            left: "10px",
-            position: "relative",
-            top: "-12px",
-          }}
-        >
-          Loading ...
-        </Typography>
-      </Box>
-    ); // Or any other loading indicator
-  }
+  // if (loading) {
+  //   return (
+  //     <Box>
+  //       <CircularProgress name="progressBar" title="progressBar" />
+  //       <Typography
+  //         variant="h6"
+  //         sx={{
+  //           flexGrow: 1,
+  //           display: "inline-block",
+  //           left: "10px",
+  //           position: "relative",
+  //           top: "-12px",
+  //         }}
+  //       >
+  //         Loading ...
+  //       </Typography>
+  //     </Box>
+  //   ); // Or any other loading indicator
+  // }
 
   return (
-    <Box component="form" autoComplete="off" onSubmit={handleSubmit}>
-      {listHeader(tableName)}
-      {columns.map((c, i) => (
-        <FormControl
-          // help={console.log("c %i:  %o", i, c)}
-          fullWidth
-          sx={{ m: 1, maxWidth: "45%" }}
-          variant="outlined"
-        >
-          {formContainer(c)}
-        </FormControl>
-      ))}
-      <Box sx={{ marginTop: "30px" }}>{renderButtons()}</Box>
-    </Box>
+    <>
+      {loading ? (
+        <Box>
+          <CircularProgress
+            name="progressBar"
+            title="progressBar"
+            key={"progress-circular"}
+          />
+          <Typography
+            key={"page-isloading"}
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              display: "inline-block",
+              left: "10px",
+              position: "relative",
+              top: "-12px",
+            }}
+          >
+            Loading ...
+          </Typography>
+        </Box>
+      ) : (
+        <Paper elevation={0}>
+          <PageHeader tableName={tableName} />
+          <Box
+            key={"box-form"}
+            component="form"
+            autoComplete="off"
+            onSubmit={handleSubmit}
+            sx={{
+              m: 1,
+              marginTop: 3,
+              padding: "0 10%",
+              justifyContent: "center",
+            }}
+          >
+            <Grid container spacing={2}>
+              {columns.map((c, i) => (
+                <Grid item xs={6} key={`grid-form-${i}`}>
+                  {c.internal_type === "boolean" ? (
+                    <EnhancedCheckBox
+                      c={c}
+                      isSelected={isSelected}
+                      handleCheckboxClick={handleClick}
+                      formData={formData}
+                    />
+                  ) : (
+                    <EnhancedTextField
+                      c={c}
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  )}
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+          <Box sx={{ marginTop: "30px" }} key={"box-buttons-bottom"}>
+            {renderButtons()}
+          </Box>
+        </Paper>
+      )}
+    </>
   );
 };
 
