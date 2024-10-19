@@ -6,6 +6,8 @@ const sequelizeDataTypes = {
   boolean: DataTypes.BOOLEAN,
   date: DataTypes.DATEONLY,
   datetime: DataTypes.DATE,
+  collection: DataTypes.STRING,
+  choice: DataTypes.STRING,
 };
 
 module.exports = sequelizeDataTypes;
