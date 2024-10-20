@@ -40,7 +40,9 @@ class Utils {
   bool(value) {
     if (value === 1 || value === "1" || value === "true" || value === true)
       return true;
-    return false;
+    if (value === 0 || value === "0" || value === "fasle" || value === false)
+      return false;
+    else return value;
   }
 
   /**

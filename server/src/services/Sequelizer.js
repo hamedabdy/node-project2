@@ -1,14 +1,8 @@
-// CHALK LOGGING
-const chalk = require("chalk");
-const log = console.log;
-const warning = chalk.bold.hex("#FFA500"); // Orange color
-/////
-
 const { Sequelize, DataTypes } = require("sequelize");
 
 const { dbConfig } = require("../config/database");
-const Utils = require("../utils/utils"); // Load utilies
-const utils = new Utils();
+const utils = new (require("../utils/utils"))(); // Load utilies
+const query_litteral = new (require("../utils/QueryLitteral"))();
 
 // IMPORT MODELS
 const SysMetaData = require("../models/SysMetaData");
@@ -23,7 +17,7 @@ const sequelize = new Sequelize(
   {
     host: "localhost",
     dialect: "mariadb",
-    logging: log,
+    logging: utils.warn,
     define: {
       freezeTableName: true, // Prevent Sequelize from pluralizing table names
       createdAt: "sys_created_on",
@@ -37,8 +31,16 @@ class Sequelizer {
     this.sequelize = sequelize;
     this.sysMetaData = SysMetaData(this.sequelize);
     this.sysGlideObject = SysGlideObject(this.sequelize, this.sysMetaData);
-    this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData);
-    this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData);
+    this.sysDictionary = SysDictionary(
+      this.sequelize,
+      this.sysMetaData,
+      this.sysGlideObject
+    );
+    this.sysDbObject = SysDbObject(
+      this.sequelize,
+      this.sysMetaData,
+      this.sysDictionary
+    );
     this.sequelize.sync({ alter: false, force: false });
   }
 
@@ -60,44 +62,6 @@ class Sequelizer {
   async getTables() {
     return await this.sequelize.getQueryInterface().showAllTables();
   }
-
-  // Create a table
-  // async createTable(tableName) {
-  //   // Define a model without any attributes
-  //   const newTable = this.sequelize.define(tableName, {
-  //     sys_id: {
-  //       type: DataTypes.STRING(32),
-  //       primaryKey: true,
-  //       unique: true,
-  //       allowNull: false,
-  //     },
-  //     sys_created_by: {
-  //       type: DataTypes.STRING(40),
-  //       allowNull: false,
-  //     },
-  //     sys_updated_by: {
-  //       type: DataTypes.STRING(40),
-  //       allowNull: false,
-  //     },
-  //     sys_class_name: {
-  //       type: DataTypes.STRING(80),
-  //       allowNull: false,
-  //       defaultValue: tableName,
-  //     },
-  //   });
-
-  //   // Create the table in the database
-  //   return newTable
-  //     .sync()
-  //     .then(() => {
-  //       console.log("%s has been created.", tableName);
-  //       return { status: "success" };
-  //     })
-  //     .catch((error) => {
-  //       console.log("An error occurred: ", error);
-  //       return { status: "fail" };
-  //     });
-  // }
 
   // Delete a table from DB
   async dropTable(tableName) {
@@ -157,9 +121,20 @@ class Sequelizer {
     // Define the model for the table
     const Model = this.sequelize.define(table_name, data);
 
+    utils.warn(
+      "sequelier - getrows - sys_id : %s\nsysparm_query : %s\nsysparm_limit : %s",
+      sys_id,
+      sysparm_query,
+      sysparm_limit
+    );
+
     if (!sys_id) {
-      const where = sysparm_query ? { where: { sysparm_query } } : {};
-      return await Model.findAll(where)
+      const q = query_litteral.encodedQueryToSequelize(sysparm_query);
+      utils.warn("sequelier - getrows - q : %o", q);
+      let query = sysparm_query ? { where: q } : {};
+      if (sysparm_limit) query.limit = parseInt(sysparm_limit);
+
+      return await Model.findAll(query)
         .then((result) => {
           return { data: result, status: "success", err: "" };
         })
@@ -169,50 +144,13 @@ class Sequelizer {
         });
     }
 
-    if (sysparm_limit) {
-      Model.findAndCountAll({ where: { sysparm_query } })
-        .then((result) => {
-          return { data: result, status: "success", err: "" };
-        })
-        .catch((e) => {
-          console.error("Get rows error : ", e);
-          return { data: "", status: "fail", err: e };
-        });
-    }
-
-    if (false) {
-      Model.max("attribute", {
-        where: {
-          sys_id: "yourSysId", // replace with your sys_id
-        },
-      }).then((max) => {
-        console.log(max);
-      });
-
-      Model.min("attribute", {
-        where: {
-          sys_id: "yourSysId", // replace with your sys_id
-        },
-      }).then((min) => {
-        console.log(min);
-      });
-    }
-
     if (sys_id) {
-      console.log("insideeee if sysid : %s", sys_id);
-      return await Model.findByPk(sys_id, {})
-        .then((result) => {
-          return { data: [result], status: "success", err: "" };
-        })
-        .catch((e) => {
-          console.error("Get rows error : ", e);
-          return { data: "", status: "fail", err: e };
-        });
+      return this.findBySysId(sys_id);
     }
   }
 
   async findBySysId(Model, sys_id) {
-    return await Model.findOne({ where: { sys_id } })
+    return await Model.findByPk(sys_id)
       .then((result) => {
         return { data: [result], status: "success", err: "" };
       })
@@ -253,23 +191,33 @@ class Sequelizer {
 
     req.body.sys_name = req.body.name;
 
-    // Define the model for the table
-    var Model = {};
+    const table_map = {
+      sys_db_object: this.sysDbObject,
+      sys_dictionary: this.sysDictionary,
+    };
+
+    const Model =
+      table_map[table_name] ??
+      (() => {
+        const { data } = this.getColumns(table_name);
+        return this.sequelize.define(table_name, data);
+      });
+
     // this.addHooks(Model, "create");
 
-    switch (table_name) {
-      case "sys_db_object":
-        Model = this.sysDbObject;
-        break;
-      case "sys_dictionary":
-        Model = this.sysDictionary;
-        // this.sysDictionary.insertRow(req.body);
-        break;
-      default:
-        const { data } = await this.getColumns(table_name);
-        Model = this.sequelize.define(table_name, data);
-        break;
-    }
+    // switch (table_name) {
+    //   case "sys_db_object":
+    //     Model = this.sysDbObject;
+    //     break;
+    //   case "sys_dictionary":
+    //     Model = this.sysDictionary;
+    //     // this.sysDictionary.insertRow(req.body);
+    //     break;
+    //   default:
+    //     const { data } = await this.getColumns(table_name);
+    //     Model = this.sequelize.define(table_name, data);
+    //     break;
+    // }
 
     // Insert the new row
     return await Model.create(req.body)
@@ -285,24 +233,37 @@ class Sequelizer {
   async updateRow(req) {
     const { table_name } = req.params;
     const { sys_id } = req.body;
-    var Model = {};
 
-    switch (table_name) {
-      case "sys_db_object":
-        Model = this.sysDbObject;
-        break;
-      case "sys_dictionary":
-        Model = this.sysDictionary;
-        break;
-      default:
-        const { data } = await this.getColumns(table_name);
-        Model = this.sequelize.define(table_name, data);
-        break;
-    }
+    // switch (table_name) {
+    //   case "sys_db_object":
+    //     Model = this.sysDbObject;
+    //     break;
+    //   case "sys_dictionary":
+    //     Model = this.sysDictionary;
+    //     break;
+    //   default:
+    //     const { data } = await this.getColumns(table_name);
+    //     Model = this.sequelize.define(table_name, data);
+    //     break;
+    // }
 
-    const instance = await Model.findOne({ where: { sys_id: sys_id } });
-    // No record found with the provided sys_id
-    if (!instance) return [];
+    log(warning("sequelizer - body : %o"), req.body);
+
+    const table_map = {
+      sys_db_object: this.sysDbObject,
+      sys_dictionary: this.sysDictionary,
+    };
+
+    const Model =
+      table_map[table_name] ??
+      (() => {
+        const { data } = this.getColumns(table_name);
+        return this.sequelize.define(table_name, data);
+      });
+
+    const instance = await Model.findByPk(sys_id);
+    if (!instance)
+      return { sys_id: "", status: "fail", err: "Record not found" };
 
     // this.addHooks(Model, "update");
 
