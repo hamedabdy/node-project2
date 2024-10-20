@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, startTransition } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  startTransition,
+  Suspense,
+} from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
@@ -46,48 +52,82 @@ const DynamicForm = () => {
   const [formData, setFormData] = useState({});
   const [pageTitle, setPageTitle] = useState("");
   const [reloadData, setReloadData] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [checkboxes, setCheckboxes] = useState({});
-  const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    console.log("Start of useEffet 1 !");
-    // Use useEffect to reset the state variable after the component has re-rendered
+  const loadPage = async () => {
+    console.log("DynForm - function load page !");
 
-    const loadPage = () => {
-      startTransition(async () => {
-        try {
-          if (tableName) {
-            const cols = await ApiService.getColumns(tableName);
-            setColumns(cols.data.rows);
+    try {
+      if (tableName) {
+        const cols = await ApiService.getColumns(tableName);
+        if (sysID && sysID !== "-1") {
+          const resp = await ApiService.getData({
+            table_name: tableName,
+            sys_id: sysID,
+          });
 
-            if (sysID && sysID !== "-1") {
-              const resp = await ApiService.getData({
-                table_name: tableName,
-                sys_id: sysID,
-              });
-              setFormData(resp.data.pop());
-            }
-          }
-        } catch (error) {
-          console.error("Error loading page:", error);
-          setError("Failed to fetch record");
-        } finally {
-          setLoading(false);
+          setColumns(cols.data.rows);
+          setFormData(resp.data.pop());
         }
-      });
-    };
+      }
+    } catch (error) {
+      console.error("Error loading page:", error);
+      setError("Failed to fetch record");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("DynForm - Start of useEffet !");
+    // Use useEffect to reset the state variable after the component has re-rendered
 
     loadPage();
 
     if (reloadData) setReloadData(false); // if page has reloaded then stop
     return () => {
       // will run on every unmount.
-      // console.log("component is unmounting");
+      console.log("DynForm - component is unmounting");
     };
     // eslint-disable-next-line
-  }, [tableName, sysID]);
+  }, [tableName, sysID, reloadData]);
+
+  // if (isLoading) {
+  //   return (
+  //     <Box>
+  //       {" "}
+  //       {console.log("inside loading component !")}
+  //       <CircularProgress
+  //         name="progressBar"
+  //         title="progressBar"
+  //         key={"progress-circular"}
+  //       />
+  //       <Typography
+  //         key={"page-isloading"}
+  //         variant="h6"
+  //         sx={{
+  //           flexGrow: 1,
+  //           display: "inline-block",
+  //           left: "10px",
+  //           position: "relative",
+  //           top: "-12px",
+  //         }}
+  //       >
+  //         Loading ...
+  //       </Typography>
+  //     </Box>
+  //   );
+  // }
+
+  // if (error) {
+  //   return (
+  //     <div>
+  //       <p>{error}</p>
+  //     </div>
+  //   );
+  // }
 
   // TODO event base form update when data changes at server side
 
@@ -328,13 +368,6 @@ const DynamicForm = () => {
       ...prev,
       [name]: checked,
     }));
-
-    // Update the selected state
-    if (checked) {
-      setSelected((prev) => [...prev, name]); // Add to selected
-    } else {
-      setSelected((prev) => prev.filter((id) => id !== name)); // Remove from selected
-    }
   };
 
   const EnhancedCheckBox = (props) => {
@@ -381,110 +414,85 @@ const DynamicForm = () => {
   };
 
   return (
-    <>
-      {loading ? (
-        <Box>
-          <CircularProgress
-            name="progressBar"
-            title="progressBar"
-            key={"progress-circular"}
-          />
-          <Typography
-            key={"page-isloading"}
-            variant="h6"
-            sx={{
-              flexGrow: 1,
-              display: "inline-block",
-              left: "10px",
-              position: "relative",
-              top: "-12px",
-            }}
-          >
-            Loading ...
-          </Typography>
-        </Box>
-      ) : (
-        <Paper
-          elevation={0}
-          component="form"
-          autoComplete="off"
-          onSubmit={handleSubmit}
-        >
-          <PageHeader tableName={tableName} />
-          <Box
-            key={"box-form"}
-            sx={{
-              m: 1,
-              marginTop: 3,
-              padding: "0 10%",
-              justifyContent: "center",
-            }}
-          >
-            <Grid container spacing={2}>
-              {columns.map((c) => (
-                <Grid item xs={6} key={`grid-input-${c.sys_id}`}>
-                  {c.internal_type === "boolean" ? (
-                    <EnhancedCheckBox
-                      c={c}
-                      handleCheckboxClick={handleCheckboxClick}
-                      checkboxes={checkboxes}
-                      formData={formData}
-                    />
-                  ) : (
-                    // <EnhancedTextField
-                    //   c={c}
-                    //   formData={formData}
-                    //   handleInputChange={handleInputChange}
-                    // />
-                    <Grid container alignItems="center">
-                      <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
-                        <Typography>
-                          {c.column_label} | {c.element}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
-                        <FormControl fullWidth variant="outlined">
-                          <TextField
-                            fullWidth
-                            // label={`${c.column_label} | ${c.element}`}
-                            id={`form-textfield-${c.sys_id}`}
-                            name={c.element}
-                            variant={
-                              isSysColumn(c.element)
-                                ? "filled"
-                                : FormControl.variant
-                            }
-                            inputProps={{
-                              // Set the readOnly attribute to true
-                              readOnly: isSysColumn(c.element),
-                            }}
-                            value={formData[c.element] || ""}
-                            error={error}
-                            required={false}
-                            helperText={error ? "This field is required" : ""}
-                            onChange={(e) => {
-                              handleInputChange(c.element, e.target.value);
-                              if (e.target.value) setError(false);
-                            }}
-                            size="small"
-                          />
-                        </FormControl>
-                      </Grid>
-                    </Grid>
-                  )}
+    <Paper
+      elevation={0}
+      component="form"
+      autoComplete="off"
+      onSubmit={handleSubmit}
+    >
+      <PageHeader tableName={tableName} />
+      <Box
+        key={"box-form"}
+        sx={{
+          m: 1,
+          marginTop: 3,
+          padding: "0 10%",
+          justifyContent: "center",
+        }}
+      >
+        <Grid container spacing={2}>
+          {columns.map((c) => (
+            <Grid item xs={6} key={`grid-input-${c.sys_id}`}>
+              {c.internal_type === "boolean" ? (
+                <EnhancedCheckBox
+                  c={c}
+                  handleCheckboxClick={handleCheckboxClick}
+                  checkboxes={checkboxes}
+                  formData={formData}
+                />
+              ) : (
+                // <EnhancedTextField
+                //   c={c}
+                //   formData={formData}
+                //   handleInputChange={handleInputChange}
+                // />
+                <Grid container alignItems="center">
+                  <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
+                    <Typography>
+                      {c.column_label} | {c.element}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
+                    <FormControl fullWidth variant="outlined">
+                      <TextField
+                        fullWidth
+                        // label={`${c.column_label} | ${c.element}`}
+                        id={`form-textfield-${c.sys_id}`}
+                        name={c.element}
+                        variant={
+                          isSysColumn(c.element)
+                            ? "filled"
+                            : FormControl.variant
+                        }
+                        inputProps={{
+                          // Set the readOnly attribute to true
+                          readOnly: isSysColumn(c.element),
+                        }}
+                        value={formData[c.element] || ""}
+                        error={error}
+                        required={false}
+                        helperText={error ? "This field is required" : ""}
+                        onChange={(e) => {
+                          handleInputChange(c.element, e.target.value);
+                          if (e.target.value) setError(false);
+                        }}
+                        size="small"
+                      />
+                    </FormControl>
+                  </Grid>
                 </Grid>
-              ))}
+              )}
             </Grid>
-          </Box>
-          <Box sx={{ marginTop: "30px" }} key={"box-buttons-bottom"}>
-            <FormButtons
-              insertAndStay={insertAndStay}
-              handleDelete={handleDelete}
-            />
-          </Box>
-        </Paper>
-      )}
-    </>
+          ))}
+        </Grid>
+      </Box>
+      <Box sx={{ marginTop: "30px" }} key={"box-buttons-bottom"}>
+        <FormButtons
+          insertAndStay={insertAndStay}
+          handleDelete={handleDelete}
+        />
+      </Box>
+    </Paper>
   );
 };
 

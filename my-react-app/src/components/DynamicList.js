@@ -38,15 +38,16 @@ const DynamicList = () => {
   const [dense, setDense] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [isLoading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("Start of useEffect !");
-    console.log(
-      "dyn list - usereffect - search params : %o\nquery : %s\ntablename : %s",
-      searchParams,
-      sysparmQuery,
-      tableName
-    );
+    console.log("DynList - Start of useEffect !");
+    // console.log(
+    //   "dyn list - usereffect - search params : %o\nquery : %s\ntablename : %s",
+    //   searchParams,
+    //   sysparmQuery,
+    //   tableName
+    // );
 
     const getData = async () => {
       try {
@@ -68,7 +69,7 @@ const DynamicList = () => {
     getData();
 
     return () => {
-      console.log("unmounting useffect");
+      console.log("DynList - unmounting useffect");
     };
     // eslint-disable-next-line
   }, [tableName]);
@@ -135,82 +136,85 @@ const DynamicList = () => {
     [order, orderBy, page, rowsPerPage, data]
   );
 
+  // if (isLoading) {
+  //   <Box>
+  //     <CircularProgress name="progressBar" title="progressBar" />
+  //     <Typography
+  //       variant="h6"
+  //       sx={{
+  //         flexGrow: 1,
+  //         display: "inline-block",
+  //         left: "10px",
+  //         position: "relative",
+  //         top: "-12px",
+  //       }}
+  //     >
+  //       Loading ...
+  //     </Typography>
+  //   </Box>;
+  // }
+
+  // if (error) {
+  //   return (
+  //     <div>
+  //       <p>{error}</p>
+  //     </div>
+  //   );
+  // }
+
   return (
-    <>
-      {isLoading ? (
-        <Box>
-          <CircularProgress name="progressBar" title="progressBar" />
-          <Typography
-            variant="h6"
-            sx={{
-              flexGrow: 1,
-              display: "inline-block",
-              left: "10px",
-              position: "relative",
-              top: "-12px",
-            }}
+    <Box sx={{ width: "100%" }}>
+      <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
+        <EnhancedToolbar numSelected={selected.length} tableName={tableName} />
+        <QueryFilter />
+        <TableContainer
+          component={Paper}
+          elevation={1}
+          sx={{ overflow: "auto" }}
+        >
+          <Table
+            stickyHeader
+            aria-label="sticky table"
+            sx={{ minWidth: 750 }}
+            size={dense ? "small" : "medium"}
           >
-            Loading ...
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ width: "100%" }}>
-          <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
-            <EnhancedToolbar
+            <EnhancedTableHead
+              columns={columns}
+              visibleRows={visibleRows}
               numSelected={selected.length}
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              rowCount={columns.length}
+            />
+            <EnhancedTableBody
+              columns={columns}
+              visibleRows={visibleRows}
+              isSelected={isSelected}
+              handleClick={handleClick}
+              emptyRows={emptyRows}
+              dense={dense}
               tableName={tableName}
             />
-            <QueryFilter />
-            <TableContainer
-              component={Paper}
-              elevation={1}
-              sx={{ overflow: "auto" }}
-            >
-              <Table
-                stickyHeader
-                aria-label="sticky table"
-                sx={{ minWidth: 750 }}
-                size={dense ? "small" : "medium"}
-              >
-                <EnhancedTableHead
-                  columns={columns}
-                  visibleRows={visibleRows}
-                  numSelected={selected.length}
-                  order={order}
-                  orderBy={orderBy}
-                  onSelectAllClick={handleSelectAllClick}
-                  onRequestSort={handleRequestSort}
-                  rowCount={columns.length}
-                />
-                <EnhancedTableBody
-                  columns={columns}
-                  visibleRows={visibleRows}
-                  isSelected={isSelected}
-                  handleClick={handleClick}
-                  emptyRows={emptyRows}
-                  dense={dense}
-                  tableName={tableName}
-                />
-              </Table>
-            </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50, 100]}
-              component="div"
-              count={data.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              ActionsComponent={TablePaginationActions}
-            />
-          </Paper>
-          <FormControlLabel
-            control={<Switch checked={dense} onChange={handleChangeDense} />}
-            label="Dense padding"
-          />
-        </Box>
-      )}
-    </>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          component="div"
+          count={data.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          ActionsComponent={TablePaginationActions}
+        />
+      </Paper>
+      <FormControlLabel
+        control={<Switch checked={dense} onChange={handleChangeDense} />}
+        label="Dense padding"
+      />
+    </Box>
   );
 };
 
