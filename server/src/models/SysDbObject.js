@@ -11,7 +11,7 @@ const utils = new Utils();
  * @param {object} sequelize : DB connection
  * @param {object} parent : parent class model (ex: SysMetaData)
  */
-module.exports = (sequelize, parent) => {
+module.exports = (sequelize, parent, sysDictionary) => {
   // const sysMetadata = SysMetaData(sequelize);
 
   class SysDbObject extends Model {
@@ -100,6 +100,30 @@ module.exports = (sequelize, parent) => {
       });
     }
 
+    static async insertRow(data) {
+      data.sys_name = data.element;
+      // unique 32-character sys_id. If already provided do not generate another
+      data.sys_id = data.sys_id || utils.generateSysID();
+
+      // set default values for sys_ columns
+      data.sys_updated_by = data.sys_created_by = "system";
+      data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
+
+      // Insert the new row
+      return await this.create(data)
+        .then((result) => {
+          return {
+            sys_id: result.dataValues.sys_id,
+            status: "success",
+            err: "",
+          };
+        })
+        .catch((e) => {
+          console.error("SysDictionary - inserRow - Insert row error : ", e);
+          return { sys_id: "", status: "fail", err: e };
+        });
+    }
+
     // TODO : Methods : delete, MultipleDelet, findByID and findOne
   }
 
@@ -112,32 +136,32 @@ module.exports = (sequelize, parent) => {
     hooks: {
       beforeCreate: (SysDbObjectModel, options) => {
         // Do something before creating a new sysMetadata instance
-        console.log("\n\n BEFORE CREATE HOOK \n\n");
+        console.log("\n\n[SysDbObject] BEFORE CREATE HOOK \n\n");
       },
       afterCreate: (SysDbObjectModel, options) => {
         // TODO : create a new row in sys_dictionary for every new table creation
-        // TODO : Create table for every new row created in this table
-        console.log("\n\n AFTER CREATE HOOK \n\n");
+        console.log("\n\n[SysDbObject] AFTER CREATE HOOK \n\n");
         SysDbObject.createTableIfNotExists(SysDbObjectModel);
-        parent.insertRow(SysDbObjectModel.dataValues);
+        // parent.insertRow(SysDbObjectModel.dataValues);
+        // Insert the new row into sys_dictionary
+        sysDictionary.insertRow(SysDbObjectModel.dataValues);
       },
       beforeUpdate: (SysDbObjectModel, options) => {
         // Do something before updating a sysMetadata instance
-        console.log("\n\n BEFORE UPDATE HOOK \n\n");
+        console.log("\n\n[SysDbObject] BEFORE UPDATE HOOK \n\n");
       },
       afterUpdate: (SysDbObjectModel, options) => {
         // Do something after updating a sysMetadata instance
-        console.log("\n\n AFTER UPDATE HOOK \n\n");
+        console.log("\n\n[SysDbObject] AFTER UPDATE HOOK \n\n");
       },
       beforeBulkDestroy: (SysDbObjectModel) => {
         // Do something before destroying a sysMetadata instance
-        console.log("\n\n BEFORE DESTROY HOOK \n\n");
-
+        console.log("\n\n[SysDbObject] BEFORE DESTROY HOOK \n\n");
         SysDbObject.getRows(SysDbObjectModel);
       },
       afterBulkDestroy: () => {
         // Do something after destroying a sysMetadata instance
-        console.log("\n\n AFTER DESTROY HOOK \n\n");
+        console.log("\n\n[SysDbObject] AFTER DESTROY HOOK \n\n");
         // if no record do nothing
         if (SysDbObject.deletedRecords.length == 0) return;
 

@@ -1,6 +1,6 @@
 // import PropTypes from "prop-types"; // data type checking
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
 
@@ -25,6 +25,10 @@ import Utils from "./dynamicList/Utils";
 
 const DynamicList = () => {
   const { tableName } = useParams();
+  const [searchParams] = useSearchParams();
+  const [sysparmQuery, setsysparmQuery] = useState(
+    searchParams.get("sysparm_query")
+  );
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
   const [order, setOrder] = useState("desc");
@@ -41,7 +45,10 @@ const DynamicList = () => {
     const getData = async () => {
       try {
         const cols = await ApiService.getColumns(tableName);
-        const resp = await ApiService.getData({ tableName: tableName });
+        const resp = await ApiService.getData({
+          table_name: tableName,
+          sysparm_query: sysparmQuery,
+        });
 
         setColumns(cols.data.rows);
         setData(resp.data);

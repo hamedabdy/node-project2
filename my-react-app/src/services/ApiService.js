@@ -32,11 +32,9 @@ const ApiService = {
    * @param {Object} parms contains sys_id and tableName
    */
   getData: async (parms) => {
-    let p = {};
-    if (parms.sys_id) p.sys_id = parms.sys_id;
-    const uri = `${tableApiUrl}/rows/${parms.tableName}`;
+    const uri = `${tableApiUrl}/rows/${parms.table_name}`;
     try {
-      const response = await axios.get(uri, { params: p });
+      const response = await axios.get(uri, { params: parms });
       return response.data;
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -49,6 +47,8 @@ const ApiService = {
    * @param {Object} newData key:value to insert into table
    */
   addData: async (tableName, newData) => {
+    console.log("apiservice - newData : %o", newData);
+
     const uri = `${tableApiUrl}/rows/${tableName}`;
     try {
       const response = await axios.post(uri, newData, {

@@ -3,13 +3,14 @@ const { DataTypes, Model } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
+const { log } = require("util");
 const utils = new Utils();
-const SysGlideObject = require("./SysGlideObject");
+// const SysGlideObject = require("./SysGlideObject");
 // const SysMetaData = require("./SysMetaData");
 
-module.exports = (sequelize, parent) => {
+module.exports = (sequelize, parent, sysGlideObject) => {
   //   const sysMetadata = SysMetaData(sequelize);
-  const sysGlideObject = SysGlideObject(sequelize, parent);
+  // const sysGlideObject = SysGlideObject(sequelize, parent);
 
   class SysDictionary extends Model {
     static table_name = "sys_dictionary";
@@ -41,20 +42,27 @@ module.exports = (sequelize, parent) => {
 
     /**
      *
-     * @param {Model} SysDictionary sys_dictionary Sequelize model object
+     * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
     static async createColumn(sysDictionary) {
-      const tableName = sysDictionary.get("name");
-      const columnName = sysDictionary.get("element");
-      const length = sysDictionary.get("max_length");
-      const type = sysDictionary.get("internal_type");
+      // const tableName = sysDictionary.get("name");
+      // const columnName = sysDictionary.get("element");
+      // const length = sysDictionary.get("max_length");
+      const { name, element, max_length, default_value, mandatory } =
+        sysDictionary;
+      // const type = sysDictionary.get("internal_type");
+      const type =
+        sysGlideObject.dataTypes[sysDictionary.internal_type](max_length);
       // Add a column to the table
       return sequelize
         .getQueryInterface()
-        .addColumn(tableName, columnName, {
-          type: DataTypes.STRING(length),
-          allowNull: true,
+        .addColumn(name, element, {
+          type: type,
+          defaultValue: utils.nil(default_value)
+            ? false
+            : utils.bool(default_value),
+          allowNull: mandatory ? false : true, // if manadator set to false !
         })
         .then(() => {
           console.log(
@@ -66,6 +74,47 @@ module.exports = (sequelize, parent) => {
         .catch((error) => {
           console.log(
             "SysDictionary - createColumn - An error occurred: ",
+            error
+          );
+          return { status: "fail" };
+        });
+    }
+
+    /**
+     *
+     * @param {Model} sysDictionary sys_dictionary Sequelize model object
+     * @returns Object {status : "success | fail"}
+     */
+    static async updateColumn(sysDictionary) {
+      if (utils.nil(sysDictionary)) return;
+
+      const instance = await SysDictionary.findByPk(sysDictionary.sys_id);
+      if (!instance) return { status: "fail", err: "Record not found" };
+
+      const { name, element, max_length, unique, default_value } =
+        sysDictionary;
+      const type =
+        sysGlideObject.dataTypes[sysDictionary.internal_type](max_length);
+
+      return sequelize
+        .getQueryInterface()
+        .changeColumn(name, element, {
+          type: type,
+          unique: unique,
+          defaultValue: utils.nil(default_value)
+            ? false
+            : utils.bool(default_value),
+        })
+        .then(() => {
+          console.log(
+            "SysDictionary - updateColumn - New column added : %s",
+            columnName
+          );
+          return { status: "success" };
+        })
+        .catch((error) => {
+          console.log(
+            "SysDictionary - updateColumn - An error occurred: ",
             error
           );
           return { status: "fail" };
@@ -114,10 +163,9 @@ module.exports = (sequelize, parent) => {
      * @returns {object}
      */
     static async findBySysId(sysID) {
-      return await this.findOne({ where: { sys_id: sysID } })
+      return await this.findByPk(sysID)
         .then((result) => {
-          var r = result;
-          if (!result) r = [];
+          var r = !result ? [] : result;
           return { data: r, status: "success", err: "" };
         })
         .catch((e) => {
@@ -132,8 +180,7 @@ module.exports = (sequelize, parent) => {
      * @returns {promises} array of object records or error
      */
     static async getRows(options) {
-      const no_count = utils.nil(options.no_count) ? false : true;
-      if (no_count) {
+      if (utils.bool(options.no_count)) {
         return await this.findAll(options)
           .then((records) => {
             console.log("sys_dcitionary - getRows - options: %o", options);
@@ -180,7 +227,7 @@ module.exports = (sequelize, parent) => {
       // TODO add condition on type == collection
       return await this.getRows({
         where: { name: tableName },
-        no_count: no_count,
+        no_count: utils.bool(no_count),
       }).then((records) => {
         return {
           rows: records.rows.map((r) => r.dataValues),
@@ -196,7 +243,7 @@ module.exports = (sequelize, parent) => {
 
       // set default values for sys_ columns
       data.sys_updated_by = data.sys_created_by = "system";
-      data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
+      data.sys_updated_on = data.sys_created_on = this.sequelize.fn("NOW");
 
       // Insert the new row
       return await this.create(data)
@@ -213,26 +260,30 @@ module.exports = (sequelize, parent) => {
         });
     }
 
-    //// TODO : boolean values should not be string
-    static async updateColumn(model) {
-      if (utils.nil(model)) return;
+    async updateRow(data) {
+      log(warning("sysDictionary - inside update row :  %o"), data);
+      const instance = await this.findByPk(data.sys_id);
+      if (!instance)
+        return { sys_id: "", status: "fail", err: "Record not found" };
 
-      const instance = await SysDictionary.findOne({
-        where: { sys_id: model.sys_id },
-      });
-      // No record found with the provided sys_id
-      if (!instance) return [];
+      data.sys_updated_on = this.sequelize.fn("NOW");
+      // TODO : convert string to datetime
+      delete req.body.sys_created_on; // TEMP solution
 
-      const type = sysGlideObject.dataTypes[model.internal_type];
-
-      const queryInterface = sequelize.getQueryInterface();
-      queryInterface.changeColumn(model.name, model.element, {
-        type: type(model.max_length),
-        unique: model.unique,
-        defaultValue: utils.nil(model.default_value)
-          ? false
-          : utils.bool(model.default_value),
-      });
+      return await instance
+        .update(data, {
+          where: {
+            sys_id: data.sys_id,
+          },
+          individualHooks: true,
+        })
+        .then(() => {
+          return { sys_id: data.sys_id, status: "success", err: "" };
+        })
+        .catch((e) => {
+          console.error("[sysDictionary]Update row error : ", e);
+          return { sys_id: sys_id, status: "fail", err: e };
+        });
     }
 
     // /**
@@ -283,7 +334,8 @@ module.exports = (sequelize, parent) => {
         // Do something after creating a new SysDictionary instance
         console.log("\n\n AFTER CREATE HOOK \n\n");
         SysDictionary.createColumn(SysDictionaryModel);
-        // Create an application file
+        // Create an application file (sys_metadata)
+        parent.insertRow(SysDictionaryModel.dataValues);
       },
       beforeUpdate: (SysDictionaryModel, options) => {
         // Do something before updating a SysDictionary instance
@@ -293,7 +345,7 @@ module.exports = (sequelize, parent) => {
         // Do something after updating a SysDictionary instance
         console.log("\n\n AFTER UPDATE HOOK \n\n");
         // TODO : Update column length or type
-        SysDictionary.updateColumn(SysDictionaryModel);
+        // SysDictionary.updateColumn(SysDictionaryModel);
       },
       beforeBulkDestroy: (SysDictionaryModel) => {
         // Do something before destroying a SysDictionary instance

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 // Import route modules
-const tableOps = require("./tableOps");
+const tableOps = require("./tableApi");
 // const userRoutes = require('./userRoutes');
 // const productRoutes = require('./productRoutes');
 
