@@ -41,6 +41,12 @@ const DynamicList = () => {
 
   useEffect(() => {
     console.log("Start of useEffect !");
+    console.log(
+      "dyn list - usereffect - search params : %o\nquery : %s\ntablename : %s",
+      searchParams,
+      sysparmQuery,
+      tableName
+    );
 
     const getData = async () => {
       try {

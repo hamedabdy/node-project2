@@ -122,17 +122,20 @@ class Sequelizer {
     const Model = this.sequelize.define(table_name, data);
 
     utils.warn(
-      "sequelier - getrows - sys_id : %s\nsysparm_query : %s\nsysparm_limit : %s",
+      "sequelizer - getrows - sys_id : %s\nsysparm_query : %s\nsysparm_limit : %s",
       sys_id,
       sysparm_query,
       sysparm_limit
     );
 
     if (!sys_id) {
-      const q = query_litteral.encodedQueryToSequelize(sysparm_query);
-      utils.warn("sequelier - getrows - q : %o", q);
-      let query = sysparm_query ? { where: q } : {};
-      if (sysparm_limit) query.limit = parseInt(sysparm_limit);
+      let query = {};
+      if (sysparm_query) {
+        const q = query_litteral.encodedQueryToSequelize(sysparm_query);
+        utils.warn("sequelier - getrows - q : %o", q);
+        query = { where: q };
+        if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
+      }
 
       return await Model.findAll(query)
         .then((result) => {
@@ -144,9 +147,7 @@ class Sequelizer {
         });
     }
 
-    if (sys_id) {
-      return this.findBySysId(sys_id);
-    }
+    if (sys_id) return this.findBySysId(Model, sys_id);
   }
 
   async findBySysId(Model, sys_id) {

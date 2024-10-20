@@ -61,7 +61,7 @@ router.get("/descTable/:table_name", async (req, res) => {
 
 // GET ROWS
 router.get("/rows/:table_name", async (req, res) => {
-  console.log("req params : %o\nreq search : %o", req.params, req.query);
+  console.log("req params : %o\nreq query : %o", req.params, req.query);
   try {
     const result = await sequelizer.getRows(req);
     res.json(result);
