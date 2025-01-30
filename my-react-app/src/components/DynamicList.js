@@ -37,8 +37,6 @@ const DynamicList = () => {
   const [page, setPage] = useState(0);
   const [dense, setDense] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(100);
-  const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     console.log("DynList - Start of useEffect !");
@@ -59,10 +57,8 @@ const DynamicList = () => {
 
         setColumns(cols.data.rows);
         setData(resp.data);
-        setLoading(false);
       } catch (error) {
         console.log("Error in DynamicList: ", error);
-        setLoading(false);
       }
     };
 
@@ -135,32 +131,6 @@ const DynamicList = () => {
       ),
     [order, orderBy, page, rowsPerPage, data]
   );
-
-  // if (isLoading) {
-  //   <Box>
-  //     <CircularProgress name="progressBar" title="progressBar" />
-  //     <Typography
-  //       variant="h6"
-  //       sx={{
-  //         flexGrow: 1,
-  //         display: "inline-block",
-  //         left: "10px",
-  //         position: "relative",
-  //         top: "-12px",
-  //       }}
-  //     >
-  //       Loading ...
-  //     </Typography>
-  //   </Box>;
-  // }
-
-  // if (error) {
-  //   return (
-  //     <div>
-  //       <p>{error}</p>
-  //     </div>
-  //   );
-  // }
 
   return (
     <Box sx={{ width: "100%" }}>

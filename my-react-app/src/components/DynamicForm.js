@@ -39,9 +39,9 @@ import { element } from "prop-types";
 // import SaveIcon from "@mui/icons-material/Save";
 // import DeleteIcon from "@mui/icons-material/Delete";
 
-const StyledAppBar = styled(AppBar)({
-  marginBottom: "1em",
-});
+// Import Local Components
+import PageHeader from "./dynamicForm/PageHeader";
+import PageFooter from "./dynamicForm/PageFooter";
 
 const DynamicForm = () => {
   const navigate = useNavigate();
@@ -50,9 +50,7 @@ const DynamicForm = () => {
   const [sysID, setSysID] = useState(searchParams.get("sys_id"));
   const [columns, setColumns] = useState([]);
   const [formData, setFormData] = useState({});
-  const [pageTitle, setPageTitle] = useState("");
   const [reloadData, setReloadData] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [checkboxes, setCheckboxes] = useState({});
   const [error, setError] = useState(null);
 
@@ -75,8 +73,6 @@ const DynamicForm = () => {
     } catch (error) {
       console.error("Error loading page:", error);
       setError("Failed to fetch record");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -93,41 +89,6 @@ const DynamicForm = () => {
     };
     // eslint-disable-next-line
   }, [tableName, sysID, reloadData]);
-
-  // if (isLoading) {
-  //   return (
-  //     <Box>
-  //       {" "}
-  //       {console.log("inside loading component !")}
-  //       <CircularProgress
-  //         name="progressBar"
-  //         title="progressBar"
-  //         key={"progress-circular"}
-  //       />
-  //       <Typography
-  //         key={"page-isloading"}
-  //         variant="h6"
-  //         sx={{
-  //           flexGrow: 1,
-  //           display: "inline-block",
-  //           left: "10px",
-  //           position: "relative",
-  //           top: "-12px",
-  //         }}
-  //       >
-  //         Loading ...
-  //       </Typography>
-  //     </Box>
-  //   );
-  // }
-
-  // if (error) {
-  //   return (
-  //     <div>
-  //       <p>{error}</p>
-  //     </div>
-  //   );
-  // }
 
   // TODO event base form update when data changes at server side
 
@@ -171,9 +132,7 @@ const DynamicForm = () => {
     try {
       // Send a request to your API to insert a new row
       const response = await ApiService.addData(tableName, formData);
-      // console.log("sent data - response :  %o", response);
       if (response.status === "success") {
-        console.log("inside if ...");
         setSysID(response.sys_id);
         navigate(`?sys_id=${response.sys_id}`);
         // After saving the form, update the state to trigger a re-render
@@ -198,164 +157,63 @@ const DynamicForm = () => {
     }
   };
 
-  // Form top and bottom buttons
-  const FormButtons = (props) => {
-    // const dir = !direction ? "row" : direction;
-    const { insertAndStay, handleDelete } = props;
-    return (
-      <Stack direction="row" spacing={2}>
-        <Button type="submit" variant="contained" disableElevation size="small">
-          Save
-        </Button>
-        <Button
-          type="button"
-          variant="contained"
-          // color="secondary"
-          disableElevation
-          size="small"
-          onClick={insertAndStay}
-        >
-          Insert and stay
-        </Button>
-        <Button
-          type="button"
-          variant="contained"
-          color="error"
-          disableElevation
-          size="small"
-          onClick={handleDelete}
-        >
-          Delete
-        </Button>
-      </Stack>
-    );
-  };
-
-  const BreadCrumbs = (props) => {
-    const { tableName } = props;
-    return (
-      <Breadcrumbs aria-label="breadcrumb">
-        <Link color="inherit" href="/">
-          Home
-        </Link>
-        <Link
-          color="inherit"
-          sx={{
-            textTransform: "capitalize",
-          }}
-          href={`/${tableName}.list`}
-        >
-          {tableName}s
-        </Link>
-        <Typography
-          sx={{
-            fontWeight: "bold",
-          }}
-          color="textPrimary"
-        >
-          Current page
-        </Typography>
-      </Breadcrumbs>
-    );
-  };
-
-  const PageHeader = (props) => {
-    const { tableName } = props;
-    return (
-      <Paper elevation={1}>
-        <StyledAppBar position="static" color="default" elevation={1}>
-          <Toolbar>
-            <Typography
-              variant="h7"
-              sx={{
-                flexGrow: 1,
-                fontWeight: "bold",
-                textTransform: "capitalize",
-              }}
-            >
-              {tableName}s
-            </Typography>
-            <Typography variant="h8" sx={{ flexGrow: 1 }}>
-              {pageTitle}
-            </Typography>
-            <FormButtons
-              insertAndStay={insertAndStay}
-              handleDelete={handleDelete}
-            />
-          </Toolbar>
-        </StyledAppBar>
-        <BreadCrumbs tableName={tableName} />
-      </Paper>
-    );
-  };
-
   const isSysColumn = (column) => {
     return column.startsWith("sys_");
   };
 
-  // const inputLabel = (c) => {
+  // function useTraceUpdate(props) {
+  //   const prev = useRef(props);
+  //   useEffect(() => {
+  //     const changedProps = Object.entries(props).reduce((ps, [k, v]) => {
+  //       if (prev.current[k] !== v) {
+  //         ps[k] = [prev.current[k], v];
+  //       }
+  //       return ps;
+  //     }, {});
+  //     if (Object.keys(changedProps).length > 0) {
+  //       console.log("Changed props:", changedProps);
+  //     }
+  //     prev.current = props;
+  //   });
+  // }
+
+  // const EnhancedTextField = (props) => {
+  //   const { c, formData, handleInputChange } = props;
+  //   useTraceUpdate(props);
   //   return (
-  //     <Grid item>
-  //       <InputLabel sx={{ width: "150", textAlign: "left" }}>
-  //         {c.column_label} <br></br>| {c.element}
-  //       </InputLabel>
+  //     <Grid container alignItems="center">
+  //       <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
+  //         <Typography>{c.column_label}</Typography>
+  //       </Grid>
+  //       <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
+  //         <FormControl fullWidth variant="outlined">
+  //           <TextField
+  //             fullWidth
+  //             // label={`${c.column_label} | ${c.element}`}
+  //             sx={{
+  //               "& label.Mui-focused": {
+  //                 color: "tomato",
+  //               },
+  //               "& .MuiInput-underline:after": {
+  //                 borderBottomColor: "tomato",
+  //               },
+  //             }}
+  //             id={`form-textfield-${c.sys_id}`}
+  //             name={c.element}
+  //             variant={isSysColumn(c.element) ? "filled" : FormControl.variant}
+  //             // inputProps={{
+  //             //   // Set the readOnly attribute to true
+  //             //   readOnly: isSysColumn(c.element),
+  //             // }}
+  //             value={formData[c.element] || ""}
+  //             onChange={(e) => handleInputChange(c.element, e.target.value)}
+  //             size="small"
+  //           />
+  //         </FormControl>
+  //       </Grid>
   //     </Grid>
   //   );
   // };
-
-  function useTraceUpdate(props) {
-    const prev = useRef(props);
-    useEffect(() => {
-      const changedProps = Object.entries(props).reduce((ps, [k, v]) => {
-        if (prev.current[k] !== v) {
-          ps[k] = [prev.current[k], v];
-        }
-        return ps;
-      }, {});
-      if (Object.keys(changedProps).length > 0) {
-        console.log("Changed props:", changedProps);
-      }
-      prev.current = props;
-    });
-  }
-
-  const EnhancedTextField = (props) => {
-    const { c, formData, handleInputChange } = props;
-    useTraceUpdate(props);
-    return (
-      <Grid container alignItems="center">
-        <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
-          <Typography>{c.column_label}</Typography>
-        </Grid>
-        <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
-          <FormControl fullWidth variant="outlined">
-            <TextField
-              fullWidth
-              // label={`${c.column_label} | ${c.element}`}
-              sx={{
-                "& label.Mui-focused": {
-                  color: "tomato",
-                },
-                "& .MuiInput-underline:after": {
-                  borderBottomColor: "tomato",
-                },
-              }}
-              id={`form-textfield-${c.sys_id}`}
-              name={c.element}
-              variant={isSysColumn(c.element) ? "filled" : FormControl.variant}
-              // inputProps={{
-              //   // Set the readOnly attribute to true
-              //   readOnly: isSysColumn(c.element),
-              // }}
-              value={formData[c.element] || ""}
-              onChange={(e) => handleInputChange(c.element, e.target.value)}
-              size="small"
-            />
-          </FormControl>
-        </Grid>
-      </Grid>
-    );
-  };
 
   const handleCheckboxClick = (event, id) => {
     const { name, type, checked } = event.target;
@@ -420,7 +278,11 @@ const DynamicForm = () => {
       autoComplete="off"
       onSubmit={handleSubmit}
     >
-      <PageHeader tableName={tableName} />
+      <PageHeader
+        tableName={tableName}
+        insertAndStay={insertAndStay}
+        handleDelete={handleDelete}
+      />
       <Box
         key={"box-form"}
         sx={{
@@ -486,12 +348,7 @@ const DynamicForm = () => {
           ))}
         </Grid>
       </Box>
-      <Box sx={{ marginTop: "30px" }} key={"box-buttons-bottom"}>
-        <FormButtons
-          insertAndStay={insertAndStay}
-          handleDelete={handleDelete}
-        />
-      </Box>
+      <PageFooter insertAndStay={insertAndStay} handleDelete={handleDelete} />
     </Paper>
   );
 };

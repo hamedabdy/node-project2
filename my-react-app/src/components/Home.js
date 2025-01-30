@@ -29,32 +29,28 @@ const Header = () => {
   );
 };
 
-const MainContent = ({ content }) => {
-  return (
-    <Paper elevation={4} style={{ padding: "20px" }}>
-      <Typography variant="h5">Main Content</Typography>
-      {/* <DynamicList /> */}
-    </Paper>
-  );
-};
+// const MainContent = ({ content }) => {
+//   return (
+//     <Paper elevation={4} style={{ padding: "20px" }}>
+//       <Typography variant="h5">Main Content</Typography>
+//       {/* <DynamicList /> */}
+//     </Paper>
+//   );
+// };
 
 const Home = () => {
   // const [content, setContent] = useState("Default Content");
 
   return (
-    <Container maxWidth="xl">
-      <Grid container spacing={0}>
-        <Grid item xs={12}>
-          <Header />
-        </Grid>
-        <Grid item xs={6}>
+    <div className="layout">
+      <section className="header">
+        <Header />
+        <section>
           <TableList />
-        </Grid>
-        <Grid item xs={12}>
-          {/* <MainContent /> */}
-        </Grid>
-      </Grid>
-    </Container>
+        </section>
+      </section>
+      <main>{/* <MainContent /> */}</main>
+    </div>
   );
 };
 
