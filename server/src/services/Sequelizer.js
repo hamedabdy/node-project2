@@ -17,7 +17,7 @@ const sequelize = new Sequelize(
   {
     host: "localhost",
     dialect: "mariadb",
-    logging: utils.warn,
+    logging: false, // utils.warn,
     define: {
       freezeTableName: true, // Prevent Sequelize from pluralizing table names
       createdAt: "sys_created_on",
@@ -121,18 +121,10 @@ class Sequelizer {
     // Define the model for the table
     const Model = this.sequelize.define(table_name, data);
 
-    utils.warn(
-      "sequelizer - getrows - sys_id : %s\nsysparm_query : %s\nsysparm_limit : %s",
-      sys_id,
-      sysparm_query,
-      sysparm_limit
-    );
-
     if (!sys_id) {
       let query = {};
       if (sysparm_query) {
         const q = query_litteral.encodedQueryToSequelize(sysparm_query);
-        utils.warn("sequelier - getrows - q : %o", q);
         query = { where: q };
         if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
       }
@@ -197,12 +189,12 @@ class Sequelizer {
       sys_dictionary: this.sysDictionary,
     };
 
-    const Model =
-      table_map[table_name] ??
-      (() => {
-        const { data } = this.getColumns(table_name);
-        return this.sequelize.define(table_name, data);
-      });
+    let Model = table_map[table_name];
+    if (!Model) {
+      // Dynamically define the model if it doesn't exist in the table_map
+      const { data } = await this.getColumns(table_name);
+      Model = this.sequelize.define(table_name, data);
+    }
 
     // this.addHooks(Model, "create");
 
@@ -291,35 +283,35 @@ class Sequelizer {
     const { table_name } = req.params;
     const { sys_id } = req.query;
 
-    var Model = {};
+    let Model = {};
 
     switch (table_name) {
       case "sys_db_object":
         Model = this.sysDbObject;
-        // TODO : call directly the delete method of the model
+        // TODO : call directly the delete method of the model ?
         break;
       case "sys_dictionary":
         Model = this.sysDictionary;
-        // TODO : call directly the delete mthod of the model
+        // TODO : call directly the delete method of the model ?
         break;
       default:
-        var { data } = await this.getColumns(table_name);
+        let { data } = await this.getColumns(table_name);
         // Define the model for the table
         Model = this.sequelize.define(table_name, data);
         break;
     }
 
-    var { data } = await this.findBySysId(Model, sys_id);
-
+    // let { data } = await this.findBySysId(Model, sys_id);
     // this.addHooks(Model, "bulkDelete", data);
 
     return await Model.destroy({
       where: { sys_id: sys_id },
       individualHooks: true,
+      no_count: false,
     })
       .then((result) => {
-        console.log("\n%s - Record deleted : %i\n", table_name, result);
-        return { sys_id: result, status: "success", err: "" };
+        console.log("\n%s - Record deleted : %s\n", table_name, sys_id);
+        return { sys_id: sys_id, status: "success", err: "" };
       })
       .catch((e) => {
         console.error("Delete row error : ", e);

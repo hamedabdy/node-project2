@@ -38,20 +38,14 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       unique: DataTypes.BOOLEAN,
     };
 
-    static deletedRecords = [];
-
     /**
      *
      * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
     static async createColumn(sysDictionary) {
-      // const tableName = sysDictionary.get("name");
-      // const columnName = sysDictionary.get("element");
-      // const length = sysDictionary.get("max_length");
       const { name, element, max_length, default_value, mandatory } =
         sysDictionary;
-      // const type = sysDictionary.get("internal_type");
       const type =
         sysGlideObject.dataTypes[sysDictionary.internal_type](max_length);
       // Add a column to the table
@@ -67,7 +61,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         .then(() => {
           console.log(
             "SysDictionary - createColumn - New column added : %s",
-            columnName
+            element
           );
           return { status: "success" };
         })
@@ -108,7 +102,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         .then(() => {
           console.log(
             "SysDictionary - updateColumn - New column added : %s",
-            columnName
+            element
           );
           return { status: "success" };
         })
@@ -183,7 +177,6 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       if (utils.bool(options.no_count)) {
         return await this.findAll(options)
           .then((records) => {
-            console.log("sys_dcitionary - getRows - options: %o", options);
             return {
               rows: records,
               count: records.length,
@@ -196,11 +189,6 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       }
       return await this.findAndCountAll(options)
         .then((records) => {
-          console.log(
-            "sys_dcitionary - getRows - options: %o\ncount : %i",
-            options,
-            records.count
-          );
           return records;
         })
         .catch((e) => {
@@ -210,13 +198,16 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     }
 
     /**
-     * setter for setDeletedRecords. Get a list of records before being deleted
+     * Get a list of records before being deleted
      * @param {object} options object containing the where attribute
      */
     static async setDeletedRecords(options) {
+      // Clone the options and excluding "type" attr.
+      // typecontains BULKDELETE thus messing up record lookup
+      const { type, ...o } = options;
       // Fetch records to be deleted and store relevant information
-      await this.getRows(options).then((records) => {
-        this.deletedRecords = records;
+      await this.getRows(o).then((records) => {
+        options.deletedRecords = records;
       });
     }
 
@@ -352,16 +343,18 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         console.log("\n\n BEFORE BULK DESTROY HOOK \n\n");
         SysDictionary.setDeletedRecords(SysDictionaryModel);
       },
-      afterBulkDestroy: () => {
+      afterBulkDestroy: (options) => {
         // Do something after destroying a SysDictionary instance
         console.log("\n\n AFTER BULK DESTROY HOOK \n\n");
-        // if no record do nothing
-        if (SysDictionary.deletedRecords.length == 0) return;
 
-        const deletedCoulumn = SysDictionary.deletedRecords.pop();
+        console.log("deleed records in options : %s", options.deletedRecords);
+
+        // if no record do nothing
+        if (options.deletedRecords.count == 0) return;
+
+        const deletedCoulumn = options.deletedRecords.rows.pop();
         const tableName = deletedCoulumn.get("name");
         const deletedColumnName = deletedCoulumn.get("element");
-        // const deletedTableSysId = deletedCoulumn.get("sys_id");
 
         SysDictionary.removeColumn(tableName, deletedColumnName);
       },
