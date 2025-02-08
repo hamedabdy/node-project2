@@ -31,7 +31,8 @@ class Utils {
       typeof attribute === "undefined" ||
       Number.isNaN(attribute) ||
       (Array.isArray(attribute) && attribute.length === 0) || // Check if attribute is an empty array
-      (Array.isArray(attribute) && attribute.every((val) => val === null)) // Check if attribute is an array with only null values
+      (Array.isArray(attribute) && attribute.every((val) => val === null)) || // Check if attribute is an array with only null values
+      Object.keys(attribute).length === 0
     )
       return true;
     return false;
