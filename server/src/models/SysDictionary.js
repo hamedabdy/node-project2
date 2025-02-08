@@ -44,10 +44,16 @@ module.exports = (sequelize, parent, sysGlideObject) => {
      * @returns Object {status : "success | fail"}
      */
     static async createColumn(sysDictionary) {
-      const { name, element, max_length, default_value, mandatory } =
-        sysDictionary;
-      const type =
-        sysGlideObject.dataTypes[sysDictionary.internal_type](max_length);
+      const {
+        name,
+        element,
+        max_length,
+        internal_type,
+        default_value,
+        mandatory,
+      } = sysDictionary;
+
+      const type = sysGlideObject.dataTypes[internal_type](max_length);
       // Add a column to the table
       return sequelize
         .getQueryInterface()
@@ -56,7 +62,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           defaultValue: utils.nil(default_value)
             ? false
             : utils.bool(default_value),
-          allowNull: mandatory ? false : true, // if manadator set to false !
+          allowNull: mandatory ? false : true, // if manadatory set to false !
         })
         .then(() => {
           console.log(
@@ -227,28 +233,40 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       });
     }
 
-    static async insertRow(data) {
-      data.sys_name = data.element;
-      // unique 32-character sys_id. If already provided do not generate another
-      data.sys_id = data.sys_id || utils.generateSysID();
+    static async create(data, options) {
+      console.log("sys_dictionary - create - data : %o", data);
 
-      // set default values for sys_ columns
-      data.sys_updated_by = data.sys_created_by = "system";
-      data.sys_updated_on = data.sys_created_on = this.sequelize.fn("NOW");
+      data.sys_name = data.element;
 
       // Insert the new row
-      return await this.create(data)
-        .then((result) => {
-          return {
-            sys_id: result.dataValues.sys_id,
-            status: "success",
-            err: "",
-          };
-        })
-        .catch((e) => {
-          console.error("SysDictionary - inserRow - Insert row error : ", e);
-          return { sys_id: "", status: "fail", err: e };
-        });
+      const record = await super.create(data, options);
+
+      // Create the column
+      this.createColumn(data);
+
+      // Return a promise
+      return new Promise((resolve, reject) => {
+        if (!utils.nil(record)) resolve(record);
+        else
+          reject({
+            sys_id: "",
+            status: "fail",
+            err: "SysDictionary - Create - Insert row error",
+          });
+      });
+
+      // return await this.create(data)
+      //   .then((result) => {
+      //     return {
+      //       sys_id: result.dataValues.sys_id,
+      //       status: "success",
+      //       err: "",
+      //     };
+      //   })
+      //   .catch((e) => {
+      //     console.error("SysDictionary - inserRow - Insert row error : ", e);
+      //     return { sys_id: "", status: "fail", err: e };
+      //   });
     }
 
     async updateRow(data) {
@@ -308,6 +326,27 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     //     return { sys_id: "", status: "fail", err: e };
     //   }
     // }
+
+    static async createCollection(data, options) {
+      console.log("sysDictionary - createCollection - data : %o", data);
+
+      data.internal_type = "collection";
+      data.active = true;
+
+      // Insert the new row
+      const record = await super.create(data, options);
+
+      // Return a promise
+      return new Promise((resolve, reject) => {
+        if (!utils.nil(record)) resolve(record);
+        else
+          reject({
+            sys_id: "",
+            status: "fail",
+            err: "SysDictionary - createCollection - Insert row error",
+          });
+      });
+    }
   }
 
   // Initialize the SysGlideObject class by calling the init method
@@ -324,9 +363,9 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       afterCreate: (SysDictionaryModel, options) => {
         // Do something after creating a new SysDictionary instance
         console.log("\n\n AFTER CREATE HOOK \n\n");
-        SysDictionary.createColumn(SysDictionaryModel);
+        // SysDictionary.createColumn(SysDictionaryModel); // create record in sys_metadata
         // Create an application file (sys_metadata)
-        parent.insertRow(SysDictionaryModel.dataValues);
+        parent.insertRow(SysDictionaryModel.dataValues); // Create record in sys_metadata
       },
       beforeUpdate: (SysDictionaryModel, options) => {
         // Do something before updating a SysDictionary instance

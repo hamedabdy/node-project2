@@ -196,29 +196,16 @@ class Sequelizer {
       Model = this.sequelize.define(table_name, data);
     }
 
-    // this.addHooks(Model, "create");
-
-    // switch (table_name) {
-    //   case "sys_db_object":
-    //     Model = this.sysDbObject;
-    //     break;
-    //   case "sys_dictionary":
-    //     Model = this.sysDictionary;
-    //     // this.sysDictionary.insertRow(req.body);
-    //     break;
-    //   default:
-    //     const { data } = await this.getColumns(table_name);
-    //     Model = this.sequelize.define(table_name, data);
-    //     break;
-    // }
-
     // Insert the new row
     return await Model.create(req.body)
       .then((result) => {
-        return { sys_id: result.dataValues.sys_id, status: "success", err: "" };
+        if (!utils.nil(result))
+          return { sys_id: result.dataValues.sys_id, status: "success" };
+
+        console.log("SEQUELIZER - Insert row error, result : ", result);
       })
       .catch((e) => {
-        console.error("Insert row error : ", e);
+        console.error("SEQUELIZER - Insert row error : ", e);
         return { sys_id: "", status: "fail", err: e };
       });
   }
@@ -227,20 +214,7 @@ class Sequelizer {
     const { table_name } = req.params;
     const { sys_id } = req.body;
 
-    // switch (table_name) {
-    //   case "sys_db_object":
-    //     Model = this.sysDbObject;
-    //     break;
-    //   case "sys_dictionary":
-    //     Model = this.sysDictionary;
-    //     break;
-    //   default:
-    //     const { data } = await this.getColumns(table_name);
-    //     Model = this.sequelize.define(table_name, data);
-    //     break;
-    // }
-
-    log(warning("sequelizer - body : %o"), req.body);
+    // log(warning("sequelizer - body : %o"), req.body);
 
     const table_map = {
       sys_db_object: this.sysDbObject,
@@ -271,7 +245,7 @@ class Sequelizer {
       individualHooks: true,
     })
       .then(() => {
-        return { sys_id: sys_id, status: "success", err: "" };
+        return { sys_id: sys_id, status: "success" };
       })
       .catch((e) => {
         console.error("Update row error : ", e);
@@ -335,7 +309,7 @@ class Sequelizer {
           );
           switch (model.get("sys_class_name")) {
             case "sys_dictionary":
-              this.createColumn(
+              this.sysDictionary.create(
                 model.get("table"),
                 model.get("name"),
                 model.get("length")
@@ -343,7 +317,7 @@ class Sequelizer {
               break;
 
             case "sys_db_object":
-              this.createTable(model.get("name"));
+              this.sysDbObject.createTableIfNotExists(model); //this.createTable(model.get("name"));
               break;
             default:
               break;

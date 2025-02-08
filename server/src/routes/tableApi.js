@@ -21,14 +21,14 @@ router.get("/tables", async (req, res) => {
   res.json(result);
 });
 
-// CREATE a TABLE ==> TO BE CHANGED TO POST
+// CREATE a TABLE ==> DO NOT USE. Use Create Record in sys_db_object
 router.get("/create_table", async (req, res) => {
   const { name } = req.query;
   const result = await sequelizer.createTable(name);
   res.json(result);
 });
 
-// DROP a TABLE ==> TO BE CHANGED TO DELETE
+// DROP a TABLE ==> DO NOT USE. Use Delete Record in sys_db_object
 router.get("/drop_table", async (req, res) => {
   const { name } = req.query;
   const result = await sequelizer.dropTable(name);

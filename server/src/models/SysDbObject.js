@@ -29,40 +29,53 @@ module.exports = (sequelize, parent, sysDictionary) => {
 
     deletedRecords = []; // get a list of deleted records
 
+    // Overload the `create` method
+    static async create(data, options) {
+      console.log("sysDBObject - data : %o", data);
+
+      let record = {};
+
+      // Create record if table name not nil
+      if (!utils.nil(data.name)) {
+        // Call the default `create` method using `super.create`
+        record = await super.create(data, options);
+        this.createTableIfNotExists(data);
+        sysDictionary.createCollection(data);
+      }
+
+      return new Promise((resolve, reject) => {
+        if (!utils.nil(record)) {
+          resolve(record);
+        } else {
+          reject(
+            "SysDbObject - Could not create table. Missing name attribute"
+          );
+        }
+      });
+    }
+
     /**
      * @param {Model} SysDbObjectModel Model of the table to create
      */
     static async createTableIfNotExists(SysDbObjectModel) {
-      // TODO : use default parent Model (SysMetaData) if no parent provided.
       // TODO : Parent should come form super_class
 
-      const tableName = SysDbObjectModel.name;
-      const super_class = SysDbObjectModel.super_class;
+      const { name, super_class } = SysDbObjectModel;
       const p = utils.nil(parent) ? SysDbObjectModel : parent;
 
       const queryInterface = sequelize.getQueryInterface();
-      // Check if the table exists
-      queryInterface
-        .describeTable(tableName)
-        .then((table) => {
-          if (table) {
-            console.log(
-              "SYS_DB_OBJECT - createTable - %s already exists",
-              tableName
-            );
-          }
-        })
-        .catch((error) => {
-          // console.error("SYS_DB_OBJECT - createTable - ERROR : %o", error)
-          console.log(
-            "SYS_DB_OBJECT - createTable - Creating table : %s",
-            tableName
-          );
-          queryInterface.createTable(
-            SysDbObjectModel.dataValues.name,
-            p.getAttributes()
-          );
-        });
+      try {
+        // Check if the table exists
+        await queryInterface.describeTable(name);
+        console.log("tablename %s already exists !", name);
+        return {
+          status: "success",
+          message: `Table "${name}" already exists !`,
+        };
+      } catch (e) {
+        await queryInterface.createTable(name, p.getAttributes());
+        return { status: "success", message: `New table "${name}" created !` };
+      }
     }
 
     /**
@@ -100,29 +113,29 @@ module.exports = (sequelize, parent, sysDictionary) => {
       });
     }
 
-    static async insertRow(data) {
-      data.sys_name = data.element;
-      // unique 32-character sys_id. If already provided do not generate another
-      data.sys_id = data.sys_id || utils.generateSysID();
+    // static async insertRow(data) {
+    //   data.sys_name = data.element;
+    //   // unique 32-character sys_id. If already provided do not generate another
+    //   data.sys_id = data.sys_id || utils.generateSysID();
 
-      // set default values for sys_ columns
-      data.sys_updated_by = data.sys_created_by = "system";
-      data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
+    //   // set default values for sys_ columns
+    //   data.sys_updated_by = data.sys_created_by = "system";
+    //   data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
 
-      // Insert the new row
-      return await this.create(data)
-        .then((result) => {
-          return {
-            sys_id: result.dataValues.sys_id,
-            status: "success",
-            err: "",
-          };
-        })
-        .catch((e) => {
-          console.error("SysDictionary - inserRow - Insert row error : ", e);
-          return { sys_id: "", status: "fail", err: e };
-        });
-    }
+    //   // Insert the new row
+    //   return await this.create(data)
+    //     .then((result) => {
+    //       return {
+    //         sys_id: result.dataValues.sys_id,
+    //         status: "success",
+    //         err: "",
+    //       };
+    //     })
+    //     .catch((e) => {
+    //       console.error("SysDictionary - inserRow - Insert row error : ", e);
+    //       return { sys_id: "", status: "fail", err: e };
+    //     });
+    // }
 
     // TODO : Methods : delete, MultipleDelet, findByID and findOne
   }
@@ -141,10 +154,10 @@ module.exports = (sequelize, parent, sysDictionary) => {
       afterCreate: (SysDbObjectModel, options) => {
         // TODO : create a new row in sys_dictionary for every new table creation
         console.log("\n\n[SysDbObject] AFTER CREATE HOOK \n\n");
-        SysDbObject.createTableIfNotExists(SysDbObjectModel);
-        // parent.insertRow(SysDbObjectModel.dataValues);
+        // SysDbObject.createTableIfNotExists(SysDbObjectModel);
+        // parent.insertRow(SysDbObjectModel.dataValues); // create arecord in sys_metadata
         // Insert the new row into sys_dictionary
-        sysDictionary.insertRow(SysDbObjectModel.dataValues);
+        // sysDictionary.createCollection(SysDbObjectModel.dataValues);
       },
       beforeUpdate: (SysDbObjectModel, options) => {
         // Do something before updating a sysMetadata instance
