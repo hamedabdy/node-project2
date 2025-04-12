@@ -1,47 +1,30 @@
 import React, {
   useState,
   useEffect,
-  useRef,
-  startTransition,
-  Suspense,
+  // useRef,
+  // startTransition,
+  // Suspense,
 } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
 
 // Styles
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Link from "@mui/material/Link";
-// import Paper from "@mui/material/Paper";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
-import Stack from "@mui/material/Stack";
-// import Input from "@mui/material/Input";
-import Grid from "@mui/material/Grid";
-import FormControl from "@mui/material/FormControl";
-// import InputAdornment from "@mui/material/InputAdornment";
-// import InputLabel from "@mui/material/InputLabel";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import Checkbox from "@mui/material/Checkbox";
-// import Radio from "@mui/material/Radio";
-// import RadioGroup from "@mui/material/RadioGroup";
 // import Autocomplete from "@mui/material/Autocomplete";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import CircularProgress from "@mui/material/CircularProgress";
+// import FormControlLabel from "@mui/material/FormControlLabel";
 // import LinearProgress from "@mui/material/LinearProgress";
 
-import { styled } from "@mui/system";
-import { Paper } from "@mui/material";
-import { element } from "prop-types";
+// import { styled } from "@mui/system";
+import { Paper, Typography, Grid, Box, CircularProgress } from "@mui/material";
+// import { element } from "prop-types";
 // import SaveIcon from "@mui/icons-material/Save";
 // import DeleteIcon from "@mui/icons-material/Delete";
 
 // Import Local Components
 import PageHeader from "./dynamicForm/PageHeader";
 import PageFooter from "./dynamicForm/PageFooter";
+import FormContents from "./dynamicForm/FormContents";
+import EnhancedCheckBox from "./dynamicForm/EnhancedCheckboxes";
 
 const DynamicForm = () => {
   const navigate = useNavigate();
@@ -53,6 +36,7 @@ const DynamicForm = () => {
   const [reloadData, setReloadData] = useState(false);
   const [checkboxes, setCheckboxes] = useState({});
   const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const loadPage = async () => {
     console.log("DynForm - function load page !");
@@ -60,19 +44,19 @@ const DynamicForm = () => {
     try {
       if (tableName) {
         const cols = await ApiService.getColumns(tableName);
+        setColumns(cols.data.rows); // Show fields in the form
+
         if (sysID && sysID !== "-1") {
           const resp = await ApiService.getData({
             table_name: tableName,
             sys_id: sysID,
           });
-
-          setColumns(cols.data.rows);
           setFormData(resp.data.pop());
         }
       }
     } catch (error) {
       console.error("Error loading page:", error);
-      setError("Failed to fetch record");
+      setErrorMessage("Failed to fetch record");
     }
   };
 
@@ -100,9 +84,26 @@ const DynamicForm = () => {
     }));
   };
 
+  const checkTableNameExists = async (name) => {
+    try {
+      const response = await ApiService.getTable(name);
+      if (response.status === "success" && response.data != null) return true;
+      return false;
+    } catch (error) {
+      console.error("Error checking table name:", error);
+      setErrorMessage("Error checking table name:", error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      const tableNameExists = await checkTableNameExists(formData.name);
+      if (tableNameExists) {
+        setErrorMessage(`Table with name "${formData.name}" already exists.`);
+        return;
+      }
       // Send a request to your API to insert a new row
       const response = await ApiService.addData(tableName, formData);
       if (response.status === "success") {
@@ -113,6 +114,7 @@ const DynamicForm = () => {
       }
     } catch (error) {
       console.error("Error inserting row:", error);
+      setErrorMessage("Error inserting row:", error);
     }
   };
 
@@ -129,24 +131,13 @@ const DynamicForm = () => {
 
     setFormData(fd);
 
-    try {
-      // Send a request to your API to insert a new row
-      const response = await ApiService.addData(tableName, formData);
-      if (response.status === "success") {
-        setSysID(response.sys_id);
-        navigate(`?sys_id=${response.sys_id}`);
-        // After saving the form, update the state to trigger a re-render
-        setReloadData(true);
-      }
-    } catch (error) {
-      console.error("Error inserting row:", error);
-    }
+    handleSubmit(event);
   };
 
   const handleDelete = async (event) => {
     event.preventDefault();
     try {
-      const response = await ApiService.deleteData(tableName, sysID);
+      const response = await ApiService.deleteData(tableName, formData);
       if (response.status === "success") {
         navigate(-1);
         // After saving the form, update the state to trigger a re-render
@@ -154,11 +145,8 @@ const DynamicForm = () => {
       }
     } catch (error) {
       console.error("Error deleting row:", error);
+      setErrorMessage("Error deleting row:", error);
     }
-  };
-
-  const isSysColumn = (column) => {
-    return column.startsWith("sys_");
   };
 
   // function useTraceUpdate(props) {
@@ -177,100 +165,6 @@ const DynamicForm = () => {
   //   });
   // }
 
-  // const EnhancedTextField = (props) => {
-  //   const { c, formData, handleInputChange } = props;
-  //   useTraceUpdate(props);
-  //   return (
-  //     <Grid container alignItems="center">
-  //       <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
-  //         <Typography>{c.column_label}</Typography>
-  //       </Grid>
-  //       <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
-  //         <FormControl fullWidth variant="outlined">
-  //           <TextField
-  //             fullWidth
-  //             // label={`${c.column_label} | ${c.element}`}
-  //             sx={{
-  //               "& label.Mui-focused": {
-  //                 color: "tomato",
-  //               },
-  //               "& .MuiInput-underline:after": {
-  //                 borderBottomColor: "tomato",
-  //               },
-  //             }}
-  //             id={`form-textfield-${c.sys_id}`}
-  //             name={c.element}
-  //             variant={isSysColumn(c.element) ? "filled" : FormControl.variant}
-  //             // inputProps={{
-  //             //   // Set the readOnly attribute to true
-  //             //   readOnly: isSysColumn(c.element),
-  //             // }}
-  //             value={formData[c.element] || ""}
-  //             onChange={(e) => handleInputChange(c.element, e.target.value)}
-  //             size="small"
-  //           />
-  //         </FormControl>
-  //       </Grid>
-  //     </Grid>
-  //   );
-  // };
-
-  const handleCheckboxClick = (event, id) => {
-    const { name, type, checked } = event.target;
-
-    // Update the checkboxes state
-    setCheckboxes((prev) => ({ ...prev, [name]: checked }));
-
-    // Update the formData
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
-  const EnhancedCheckBox = (props) => {
-    const { c, handleCheckboxClick, checkboxes, formData } = props;
-    // console.log(
-    //   "columns : %s : \n%o\n\nformdata : %o\n\n%o",
-    //   c.element,
-    //   c,
-    //   formData[c.element],
-    //   formData
-    // );
-
-    return (
-      <Grid container alignItems="center">
-        <Grid item xs={4} key={`grid-checkbox-label-${c.sys_id}`}>
-          <Typography key={`checkbox-label-${c.element}`}>
-            {c.column_label}
-          </Typography>
-        </Grid>
-        <Grid item xs={8} key={`grid-checkbox-${c.sys_id}`}>
-          <FormControlLabel
-            required={c.mandatory === 1}
-            control={
-              <Checkbox
-                name={c.element}
-                checked={checkboxes[c.element] || formData[c.element] === 1}
-                // checked={
-                //   checkboxes[c.element] !== -1
-                //     ? // eslint-disable-next-line
-                //       checkboxes[c.element] === true
-                //     : c.default_value === "true"
-                // }
-                // disabled={false}
-                size="medium"
-                onChange={handleCheckboxClick}
-                key={`checkbox-${c.sys_id}`}
-              />
-            }
-            // label={c.column_label}
-          />
-        </Grid>
-      </Grid>
-    );
-  };
-
   return (
     <Paper
       elevation={0}
@@ -283,6 +177,24 @@ const DynamicForm = () => {
         insertAndStay={insertAndStay}
         handleDelete={handleDelete}
       />
+
+      {errorMessage && (
+        <Paper
+          elevation={2}
+          sx={{
+            padding: 2,
+            marginBottom: 2,
+            marginTop: 2,
+            bgcolor: "error.main",
+            color: "error.contrastText",
+          }}
+        >
+          <Typography color="#333" variant="body1">
+            {errorMessage}
+          </Typography>
+        </Paper>
+      )}
+
       <Box
         key={"box-form"}
         sx={{
@@ -298,51 +210,19 @@ const DynamicForm = () => {
               {c.internal_type === "boolean" ? (
                 <EnhancedCheckBox
                   c={c}
-                  handleCheckboxClick={handleCheckboxClick}
                   checkboxes={checkboxes}
                   formData={formData}
+                  setCheckboxes={setCheckboxes}
+                  setFormData={setFormData}
                 />
               ) : (
-                // <EnhancedTextField
-                //   c={c}
-                //   formData={formData}
-                //   handleInputChange={handleInputChange}
-                // />
-                <Grid container alignItems="center">
-                  <Grid item xs={4} key={`grid-label-${c.sys_id}`}>
-                    <Typography>
-                      {c.column_label} | {c.element}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} key={`grid-field-${c.sys_id}`}>
-                    <FormControl fullWidth variant="outlined">
-                      <TextField
-                        fullWidth
-                        // label={`${c.column_label} | ${c.element}`}
-                        id={`form-textfield-${c.sys_id}`}
-                        name={c.element}
-                        variant={
-                          isSysColumn(c.element)
-                            ? "filled"
-                            : FormControl.variant
-                        }
-                        inputProps={{
-                          // Set the readOnly attribute to true
-                          readOnly: isSysColumn(c.element),
-                        }}
-                        value={formData[c.element] || ""}
-                        error={error}
-                        required={false}
-                        helperText={error ? "This field is required" : ""}
-                        onChange={(e) => {
-                          handleInputChange(c.element, e.target.value);
-                          if (e.target.value) setError(false);
-                        }}
-                        size="small"
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                <FormContents
+                  c={c}
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                  error={error}
+                  setError={setError}
+                />
               )}
             </Grid>
           ))}
