@@ -3,27 +3,25 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
-// import Typography from "@mui/material/Typography";
-// import Link from "@mui/material/Link";
+import Typography from "@mui/material/Typography";
+import Link from "@mui/material/Link";
 import Navigator from "./Navigator";
-// import Content from "./Content";
+import Content from "./Content";
 import Header from "./Header";
-// import DynamicForm from "../components/DynamicForm";
 
 import { Routes, Route } from "react-router-dom";
-import DynamicList from "../components/DynamicList";
 
-// function Copyright() {
-//   return (
-//     <Typography variant="body2" color="text.secondary" align="center">
-//       {"Copyright © "}
-//       <Link color="inherit" href="https://mui.com/">
-//         Your Website
-//       </Link>{" "}
-//       {new Date().getFullYear()}.
-//     </Typography>
-//   );
-// }
+function Copyright() {
+  return (
+    <Typography variant="body2" color="text.secondary" align="center">
+      {"Copyright © "}
+      <Link color="inherit" href="https://mui.com/">
+        Your Website
+      </Link>{" "}
+      {new Date().getFullYear()}.
+    </Typography>
+  );
+}
 
 let theme = createTheme({
   palette: {
@@ -210,19 +208,16 @@ export default function Paperbase() {
             display: "flex",
             flexDirection: "column",
             overflowX: "auto",
-            // overflowY: "auto",
-            // maxHeight: "70vh",
+            overflowY: "auto",
+            maxHeight: "70vh",
           }}
         >
           <Box component="main" sx={{ flex: 1, bgcolor: "#eaeff1" }}>
-            {/* <Content /> */}
-            <Routes>
-              <Route path=":tableName.list" element={<DynamicList />} />
-            </Routes>
+            <Content />
           </Box>
-          {/* <Box component="footer" sx={{ p: 2, bgcolor: "#eaeff1" }}>
+          <Box component="footer" sx={{ p: 2, bgcolor: "#eaeff1" }}>
             <Copyright />
-          </Box> */}
+          </Box>
         </Box>
       </Box>
     </ThemeProvider>

@@ -54,18 +54,6 @@ export default function Content() {
       <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
         No users for this project yet
       </Typography>
-
-      {/* Add your content here */}
-      <Paper sx={{ p: 2, mt: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          User List
-        </Typography>
-        <Typography variant="body1">
-          Here you can manage users for this project. Use the "Add user" button
-          to add new users or search for existing ones using the search bar
-          above.
-        </Typography>
-      </Paper>
     </Paper>
   );
 }

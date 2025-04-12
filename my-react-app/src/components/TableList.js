@@ -1,17 +1,15 @@
 // components/TableList.js
 import React, { useState, useEffect } from "react";
 import ApiService from "../services/ApiService";
-// import { Link } from "react-router-dom";
-
 import {
-  Drawer,
   List,
   ListItemText,
   ListSubheader,
   ListItemButton,
+  Box,
 } from "@mui/material";
 
-const TableList = () => {
+const TableList = ({ onTableSelect }) => {
   const [tables, setTables] = useState([]);
 
   useEffect(() => {
@@ -26,25 +24,32 @@ const TableList = () => {
     fetchTables();
   }, []);
 
+  const handleItemClick = (tableName) => {
+    const newUrl = `/${tableName}.list`;
+    onTableSelect(newUrl);
+    window.history.pushState(null, "", newUrl);
+  };
+
   return (
-    <Drawer variant="permanent" anchor="left">
-      <List
-        sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
-        component="nav"
-        aria-labelledby="nested-list-subheader"
-        subheader={
-          <ListSubheader component="div" id="nested-list-subheader">
-            Nested List Items
-          </ListSubheader>
-        }
-      >
-        {tables.map((o) => (
-          <ListItemButton to={`/${o.tableName}.list`}>
-            <ListItemText primary={o.tableName} />
-          </ListItemButton>
-        ))}
-      </List>
-    </Drawer>
+    <List
+      sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+      component="nav"
+      aria-labelledby="nested-list-subheader"
+      subheader={
+        <ListSubheader component="div" id="nested-list-subheader">
+          Nested List Items
+        </ListSubheader>
+      }
+    >
+      {tables.map((o) => (
+        <ListItemButton
+          key={o.tableName}
+          onClick={() => handleItemClick(o.tableName)}
+        >
+          <ListItemText primary={o.tableName} />
+        </ListItemButton>
+      ))}
+    </List>
   );
 };
 
