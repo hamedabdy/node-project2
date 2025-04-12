@@ -109,13 +109,18 @@ const EnhancedTableHead = (props) => {
         <TableCell
           padding="checkbox"
           sx={{ backgroundColor: "#EFEFEF" }}
+          key="search-icon-cell"
         ></TableCell>
         <TableCell
           padding="checkbox"
           sx={{ backgroundColor: "#EFEFEF" }}
+          key="select-all-checkbox-cell"
         ></TableCell>
         {columns.map((c) => (
-          <TableCell sx={{ backgroundColor: "#EFEFEF" }}>
+          <TableCell
+            sx={{ backgroundColor: "#EFEFEF" }}
+            key={`local-filter-cell-${c.sys_id}`}
+          >
             <TextField
               key={`local-filter-${c.sys_id}`}
               size="small"

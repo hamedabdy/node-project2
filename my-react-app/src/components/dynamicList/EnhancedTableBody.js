@@ -133,7 +133,7 @@ const EnhancedTableBody = (props) => {
               />
             </TableCell>
             {columns.map((c, i) => (
-              <React.Fragment>
+              <React.Fragment key={`${c.element}_${row.sys_id}`}>
                 {c.element !== "sys_id" ? (
                   <TableCell key={`${c.element}_${c.sys_id}`}>
                     {row[c.element]}
