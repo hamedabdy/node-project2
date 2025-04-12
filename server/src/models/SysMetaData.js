@@ -26,18 +26,18 @@ module.exports = (sequelize) => {
       sys_class_name: {
         type: DataTypes.STRING(80),
         allowNull: false,
-        defaultValue: this.table_name,
+        // defaultValue: this.table_name, // no default value for parent table
       },
       sys_name: { type: DataTypes.STRING(255) },
       sys_mod_count: {
-        type: DataTypes.INTEGER(6),
+        type: DataTypes.STRING(6),
         allowNull: false,
-        defaultValue: 0,
+        // defaultValue: "0",
       },
-      // sys_scope: DataTypes.STRING(32),
+      sys_scope: DataTypes.STRING(32),
       sys_update_name: DataTypes.STRING(255),
-      // sys_policy: DataTypes.STRING(40),
-      // sys_package: DataTypes.STRING(32),
+      sys_policy: DataTypes.STRING(40),
+      sys_package: DataTypes.STRING(32),
     };
 
     static async findBySysId(sysID) {
@@ -50,30 +50,6 @@ module.exports = (sequelize) => {
         .catch((e) => {
           console.error("SysMetaData - findBySysId - Error : ", e);
           return { data: "", status: "fail", err: e };
-        });
-    }
-
-    static async insertRow(data) {
-      data.sys_name = data.name;
-      // unique 32-character sys_id. If already provided do not generate another
-      data.sys_id = data.sys_id || utils.generateSysID();
-
-      // set default values for sys_ columns
-      data.sys_updated_by = data.sys_created_by = "system";
-      data.sys_updated_on = data.sys_created_on = sequelize.fn("NOW");
-
-      // Insert the new row
-      return await SysMetaData.create(data)
-        .then((result) => {
-          return {
-            sys_id: result.dataValues.sys_id,
-            status: "success",
-            err: "",
-          };
-        })
-        .catch((e) => {
-          console.error("Insert row error : ", e);
-          return { sys_id: "", status: "fail", err: e };
         });
     }
 
@@ -106,22 +82,20 @@ module.exports = (sequelize) => {
     /*
      * @parm: sysID, unoque Id the record to delete
      */
-    static async deleteRow(sysID) {
+    static async deleteRow(data, options) {
+      const { sys_id } = data.where;
+      console.log("SysMetaData - deleteRow - data : %o", data);
+
       try {
-        if (utils.nil(sysID)) throw new Error("Missing or unknown sys_id");
-
-        var { data } = await this.findBySysId(sysID);
-
-        if (utils.nil(data))
-          throw new Error("sys_id not found in " + this.table_name);
+        if (utils.nil(sys_id)) throw new Error("Missing or unknown sys_id");
 
         return await SysMetaData.destroy({
-          where: { sys_id: data.sys_id },
-          returning: true,
+          where: { sys_id: sys_id },
+          // returning: true,
         })
           .then((result) => {
-            console.log("SYSMETADA - Record deleted : %i", result);
-            return { sys_id: result, status: "success", err: "" };
+            console.log("SYSMETADA - Records deleted : %i", result);
+            return { sys_id: sys_id, status: "success" };
           })
           .catch((e) => {
             console.error("SysMetaData.destroy error : ", e);

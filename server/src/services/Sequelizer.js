@@ -15,7 +15,7 @@ const sequelize = new Sequelize(
   dbConfig.user,
   dbConfig.password,
   {
-    host: "localhost",
+    host: dbConfig.host,
     dialect: "mariadb",
     logging: false, // utils.warn,
     define: {
@@ -41,7 +41,9 @@ class Sequelizer {
       this.sysMetaData,
       this.sysDictionary
     );
-    this.sequelize.sync({ alter: false, force: false });
+    this.sequelize.sync({ alter: true, force: false });
+    // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables.
+    // force : true => Drops everything and recreates everything.
   }
 
   async testConnection() {
@@ -61,6 +63,19 @@ class Sequelizer {
   // Get a list of tables
   async getTables() {
     return await this.sequelize.getQueryInterface().showAllTables();
+  }
+
+  // Get the structure of a table
+  async getTableInfo(table_name) {
+    return await this.sysDbObject
+      .findOne({ where: { name: table_name } })
+      .then((result) => {
+        return { data: result, status: "success" };
+      })
+      .catch((e) => {
+        console.error("[SEQUELIZE] Get table info error : ", e);
+        return { data: {}, status: "fail", err: e };
+      });
   }
 
   // Delete a table from DB
@@ -183,18 +198,11 @@ class Sequelizer {
       this.sequelize.fn("NOW");
 
     req.body.sys_name = req.body.name;
+    req.body.sys_mod_count = "0";
+    req.body.sys_update_name = `${table_name}_${req.body.sys_id}`;
 
-    const table_map = {
-      sys_db_object: this.sysDbObject,
-      sys_dictionary: this.sysDictionary,
-    };
-
-    let Model = table_map[table_name];
-    if (!Model) {
-      // Dynamically define the model if it doesn't exist in the table_map
-      const { data } = await this.getColumns(table_name);
-      Model = this.sequelize.define(table_name, data);
-    }
+    // Get speccific or generic Model
+    const Model = await this.getTableMapping(table_name);
 
     // Insert the new row
     return await Model.create(req.body)
@@ -214,25 +222,12 @@ class Sequelizer {
     const { table_name } = req.params;
     const { sys_id } = req.body;
 
-    // log(warning("sequelizer - body : %o"), req.body);
-
-    const table_map = {
-      sys_db_object: this.sysDbObject,
-      sys_dictionary: this.sysDictionary,
-    };
-
-    const Model =
-      table_map[table_name] ??
-      (() => {
-        const { data } = this.getColumns(table_name);
-        return this.sequelize.define(table_name, data);
-      });
+    // Get speccific or generic Model
+    const Model = await this.getTableMapping(table_name);
 
     const instance = await Model.findByPk(sys_id);
     if (!instance)
       return { sys_id: "", status: "fail", err: "Record not found" };
-
-    // this.addHooks(Model, "update");
 
     req.body.sys_updated_on = this.sequelize.fn("NOW");
     // TODO : convert string to datetime
@@ -255,41 +250,23 @@ class Sequelizer {
 
   async deleteRow(req) {
     const { table_name } = req.params;
-    const { sys_id } = req.query;
+    const record = req.query; // needs sanitization to prevent SQL / HTML injection
 
-    let Model = {};
-
-    switch (table_name) {
-      case "sys_db_object":
-        Model = this.sysDbObject;
-        // TODO : call directly the delete method of the model ?
-        break;
-      case "sys_dictionary":
-        Model = this.sysDictionary;
-        // TODO : call directly the delete method of the model ?
-        break;
-      default:
-        let { data } = await this.getColumns(table_name);
-        // Define the model for the table
-        Model = this.sequelize.define(table_name, data);
-        break;
-    }
-
-    // let { data } = await this.findBySysId(Model, sys_id);
-    // this.addHooks(Model, "bulkDelete", data);
+    // Get speccific or generic Model
+    const Model = await this.getTableMapping(table_name);
 
     return await Model.destroy({
-      where: { sys_id: sys_id },
+      where: record,
       individualHooks: true,
       no_count: false,
     })
-      .then((result) => {
-        console.log("\n%s - Record deleted : %s\n", table_name, sys_id);
-        return { sys_id: sys_id, status: "success", err: "" };
+      .then(() => {
+        console.log("\n%s - Record deleted : %o\n", table_name, record);
+        return { record: record, status: "success" };
       })
       .catch((e) => {
-        console.error("Delete row error : ", e);
-        return { sys_id: "", status: "fail", err: e };
+        console.error("\n%s - Delete row error : %s", table_name, e);
+        return { record: record, status: "fail", err: e };
       });
   }
 
@@ -392,6 +369,22 @@ class Sequelizer {
       default:
         break;
     }
+  }
+
+  async getTableMapping(table_name) {
+    const table_map = {
+      sys_db_object: this.sysDbObject,
+      sys_dictionary: this.sysDictionary,
+    };
+
+    let Model = table_map[table_name];
+    if (!Model) {
+      // Dynamically define the model if it doesn't exist in the table_map
+      const { data } = await this.getColumns(table_name);
+      Model = this.sequelize.define(table_name, data);
+    }
+
+    return Model;
   }
 }
 

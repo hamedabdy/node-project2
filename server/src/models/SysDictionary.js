@@ -16,15 +16,15 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     static table_name = "sys_dictionary";
     static attr = {
       ...parent.attr,
-      sys_class_name: {
-        ...parent.attr.sys_class_name,
-        defaultValue: this.table_name,
-      },
+      // sys_class_name: {
+      //   ...parent.attr.sys_class_name,
+      //   defaultValue: this.table_name,
+      // },
       element: DataTypes.STRING(80),
-      sys_name: {
-        ...parent.attr.sys_name,
-        defaultValue: this.element,
-      },
+      // sys_name: {
+      //   ...parent.attr.sys_name,
+      //   defaultValue: this.element,
+      // },
       column_label: DataTypes.STRING(80),
       internal_type: DataTypes.STRING(32),
       name: DataTypes.STRING(80),
@@ -203,24 +203,10 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         });
     }
 
-    /**
-     * Get a list of records before being deleted
-     * @param {object} options object containing the where attribute
-     */
-    static async setDeletedRecords(options) {
-      // Clone the options and excluding "type" attr.
-      // typecontains BULKDELETE thus messing up record lookup
-      const { type, ...o } = options;
-      // Fetch records to be deleted and store relevant information
-      await this.getRows(o).then((records) => {
-        options.deletedRecords = records;
-      });
-    }
-
     // TODO : Methods : delete row, MultipleDelete rows
 
     static async getAttribs(tableName, no_count) {
-      utils.warn("SysDictionary - getAttribs for table : %s", tableName);
+      // utils.warn("SysDictionary - getAttribs for table : %s", tableName);
       // TODO add condition on type == collection
       return await this.getRows({
         where: { name: tableName },
@@ -233,18 +219,21 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       });
     }
 
+    // overload the `create` method
     static async create(data, options) {
       console.log("sys_dictionary - create - data : %o", data);
 
       data.sys_name = data.element;
+      data.sys_class_name = this.table_name;
 
-      // Insert the new row
+      // Insert the new row in table
       const record = await super.create(data, options);
 
-      // Create the column
-      this.createColumn(data);
+      // ignore if type is collection
+      if (data.internal_type != "collection") this.createColumn(data);
 
-      // Return a promise
+      parent.create(data, options); // Create a new record in sys_metadata
+
       return new Promise((resolve, reject) => {
         if (!utils.nil(record)) resolve(record);
         else
@@ -254,19 +243,22 @@ module.exports = (sequelize, parent, sysGlideObject) => {
             err: "SysDictionary - Create - Insert row error",
           });
       });
+    }
 
-      // return await this.create(data)
-      //   .then((result) => {
-      //     return {
-      //       sys_id: result.dataValues.sys_id,
-      //       status: "success",
-      //       err: "",
-      //     };
-      //   })
-      //   .catch((e) => {
-      //     console.error("SysDictionary - inserRow - Insert row error : ", e);
-      //     return { sys_id: "", status: "fail", err: e };
-      //   });
+    // overload the `destroy` method
+    static async destroy(data, options) {
+      console.log("sys_dictionary - destroy - data : %o", data);
+
+      const record = await super
+        .destroy({ where: { sys_id: data.where.sys_id } }, options)
+        .then((result) => {
+          console.log("SysDictionary - Records deleted : %s", result);
+          return { sys_id: data.where.sys_id, status: "success" };
+        })
+        .catch((e) => {
+          console.log("SysDictionary - error : %s", e);
+          return { sys_id: "", status: "fail", err: e };
+        });
     }
 
     async updateRow(data) {
@@ -295,57 +287,40 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         });
     }
 
-    // /**
-    //  * @param {string} sysID unique Id the record to delete
-    //  */
-    // static async deleteRow(sysID) {
-    //   try {
-    //     if (utils.nil(sysID)) throw new Error("Missing or unknown sys_id");
-
-    //     var { data } = await this.findBySysId(sysID);
-
-    //     if (utils.nil(data))
-    //       throw new Error(
-    //         "SysDictionary - deleteRow - sys_id not found in " + this.table_name
-    //       );
-
-    //     return await SysDictionary.destroy({
-    //       where: { sys_id: data.sys_id },
-    //       returning: true,
-    //     })
-    //       .then((result) => {
-    //         console.log("SysDictionary - Record deleted : %i", result);
-    //         return { sys_id: result, status: "success", err: "" };
-    //       })
-    //       .catch((e) => {
-    //         console.error("SysDictionary.destroy error : ", e);
-    //         return { sys_id: "", status: "fail", err: e };
-    //       });
-    //   } catch (e) {
-    //     console.error("SysDictionary - deleteRow - Error : ", e);
-    //     return { sys_id: "", status: "fail", err: e };
-    //   }
-    // }
-
     static async createCollection(data, options) {
-      console.log("sysDictionary - createCollection - data : %o", data);
+      // unique 32-character sys_id
+      // To prevent duplicate sys_id need a new sys_id for the collection record for each table creation.
+      data.sys_id = utils.generateSysID();
+      data.internal_type = "collection";
+      data.sys_update_name = `${this.table_name}_${data.sys_id}`;
+      data.sys_name = data.label;
+
+      this.create(data, options);
+    }
+
+    static async deleteCollection(data, options) {
+      console.log("sysDictionary - deleteCollection - data : %o", data);
 
       data.internal_type = "collection";
-      data.active = true;
+      try {
+        // Get the collection record and all table fields
+        await super
+          .findAll({
+            where: { name: data.where.name },
+          })
+          .then((collection) => {
+            data.where = collection.dataValues;
+            console.log(
+              "sysDictionary - deleteCollection - collection : %o",
+              collection.dataValues
+            );
 
-      // Insert the new row
-      const record = await super.create(data, options);
-
-      // Return a promise
-      return new Promise((resolve, reject) => {
-        if (!utils.nil(record)) resolve(record);
-        else
-          reject({
-            sys_id: "",
-            status: "fail",
-            err: "SysDictionary - createCollection - Insert row error",
+            this.destroy(data, options);
+            return result;
           });
-      });
+      } catch (e) {
+        console.error("sysDictionary - deleteCollection - error : %s", e);
+      }
     }
   }
 
@@ -358,44 +333,47 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     hooks: {
       beforeCreate: (SysDictionaryModel, options) => {
         // Do something before creating a new SysDictionary instance
-        console.log("\n\n BEFORE CREATE HOOK \n\n");
+        console.log(
+          "\n\n[%s] BEFORE CREATE HOOK \n\n",
+          SysDictionary.table_name
+        );
       },
       afterCreate: (SysDictionaryModel, options) => {
         // Do something after creating a new SysDictionary instance
-        console.log("\n\n AFTER CREATE HOOK \n\n");
-        // SysDictionary.createColumn(SysDictionaryModel); // create record in sys_metadata
+        console.log(
+          "\n\n[%s] AFTER CREATE HOOK \n\n",
+          SysDictionary.table_name
+        );
         // Create an application file (sys_metadata)
-        parent.insertRow(SysDictionaryModel.dataValues); // Create record in sys_metadata
       },
       beforeUpdate: (SysDictionaryModel, options) => {
         // Do something before updating a SysDictionary instance
-        console.log("\n\n BEFORE UPDATE HOOK \n\n");
+        console.log(
+          "\n\n[%s] BEFORE UPDATE HOOK \n\n",
+          SysDictionary.table_name
+        );
       },
       afterUpdate: (SysDictionaryModel, options) => {
         // Do something after updating a SysDictionary instance
-        console.log("\n\n AFTER UPDATE HOOK \n\n");
+        console.log(
+          "\n\n[%s] AFTER UPDATE HOOK \n\n",
+          SysDictionary.table_name
+        );
         // TODO : Update column length or type
-        // SysDictionary.updateColumn(SysDictionaryModel);
       },
       beforeBulkDestroy: (SysDictionaryModel) => {
         // Do something before destroying a SysDictionary instance
-        console.log("\n\n BEFORE BULK DESTROY HOOK \n\n");
-        SysDictionary.setDeletedRecords(SysDictionaryModel);
+        console.log(
+          "\n\n[%s] BEFORE BULK DESTROY HOOK \n\n",
+          SysDictionary.table_name
+        );
       },
       afterBulkDestroy: (options) => {
         // Do something after destroying a SysDictionary instance
-        console.log("\n\n AFTER BULK DESTROY HOOK \n\n");
-
-        console.log("deleed records in options : %s", options.deletedRecords);
-
-        // if no record do nothing
-        if (options.deletedRecords.count == 0) return;
-
-        const deletedCoulumn = options.deletedRecords.rows.pop();
-        const tableName = deletedCoulumn.get("name");
-        const deletedColumnName = deletedCoulumn.get("element");
-
-        SysDictionary.removeColumn(tableName, deletedColumnName);
+        console.log(
+          "\n\n[%s] AFTER BULK DESTROY HOOK \n\n",
+          SysDictionary.table_name
+        );
       },
     },
   });

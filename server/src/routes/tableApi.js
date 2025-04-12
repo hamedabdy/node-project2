@@ -6,10 +6,12 @@ const sequelizer = new Sequelizer();
 
 const utils = require("../utils/utils"); // Load utilies
 
+const backup = require("../services/DbBackup");
+
 /*
  * SEQUELIZE ROUTES
  */
-// test connection
+// TEST DB CONNECTION
 router.get("/test_connection", async (req, res) => {
   const result = sequelizer.testConnection();
   res.json({ response: result });
@@ -18,6 +20,13 @@ router.get("/test_connection", async (req, res) => {
 // SHOW TABLES
 router.get("/tables", async (req, res) => {
   const result = await sequelizer.getTables();
+  res.json(result);
+});
+
+// Get Table Info
+router.get("/table_info/:table_name", async (req, res) => {
+  const { table_name } = req.params;
+  const result = await sequelizer.getTableInfo(table_name);
   res.json(result);
 });
 
@@ -47,7 +56,7 @@ router.get("/columns/:table_name", async (req, res) => {
   }
 });
 
-// AUX GET COLUMNS
+// AUX GET COLUMNS - Describe Table
 router.get("/descTable/:table_name", async (req, res) => {
   const { table_name } = req.params;
   try {
@@ -61,7 +70,6 @@ router.get("/descTable/:table_name", async (req, res) => {
 
 // GET ROWS
 router.get("/rows/:table_name", async (req, res) => {
-  console.log("req params : %o\nreq query : %o", req.params, req.query);
   try {
     const result = await sequelizer.getRows(req);
     res.json(result);
@@ -77,7 +85,7 @@ router.post("/rows/:table_name", async (req, res) => {
     const result = await sequelizer.handleRecord(req);
     res.json(result);
   } catch (error) {
-    console.error("HandleRecord error: ", error);
+    console.error("HandleRecord - error: ", error);
     res.status(500).json({ error: "HandleRecord : Internal Server Error" });
   }
 });
@@ -88,8 +96,21 @@ router.delete("/rows/:table_name", async (req, res) => {
     const result = await sequelizer.deleteRow(req);
     res.json(result);
   } catch (error) {
-    console.error("DELETE ROW : error: ", error);
+    console.error("DELETE ROW - error: ", error);
     res.status(500).json({ error: "DELETE ROW : Internal Server Error" });
+  }
+});
+
+/*
+ * DB BACKUP ROUTES
+ */
+router.get("/db-backup", async (req, res) => {
+  try {
+    await backup.runBackup();
+    res.json({ status: "success", message: "DB backup is triggerd" });
+  } catch (e) {
+    console.error("DB BACKUP - error: ", e);
+    res.status(500).json({ error: "DB BACKUP : Internal Server Error" });
   }
 });
 

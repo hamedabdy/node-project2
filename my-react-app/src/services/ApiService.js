@@ -14,6 +14,17 @@ const ApiService = {
     }
   },
 
+  getTable: async (tableName) => {
+    const uri = `${tableApiUrl}/table_info/${tableName}`;
+    try {
+      const response = await axios.get(uri);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching table:", error);
+      throw error;
+    }
+  },
+
   /**
    * @param {String} tableName name of the table to get columns for
    */
@@ -61,14 +72,12 @@ const ApiService = {
 
   /**
    * @param {String} tableName technical name of the table
-   * @param {String} sys_id sys_id of the document to delete
+   * @param {Object} record document to delete
    */
-  deleteData: async (tableName, sys_id) => {
+  deleteData: async (tableName, record) => {
     const uri = `${tableApiUrl}/rows/${tableName}`;
-    let p = {};
-    if (sys_id) p.sys_id = sys_id;
     try {
-      const response = await axios.delete(uri, { params: p });
+      const response = await axios.delete(uri, { params: record });
       return response.data;
     } catch (error) {
       console.error("Error delete data:", error);
