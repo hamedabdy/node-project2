@@ -5,7 +5,6 @@ import { Typography } from "@mui/material";
 import Home from "./components/Home";
 const DynamicForm = lazy(() => import("./components/DynamicForm"));
 const DynamicList = lazy(() => import("./components/DynamicList"));
-// const TableList = lazy(() => import("./components/TableList"));
 const PaperBase = lazy(() => import("./newHome/Paperbase.js"));
 
 function App() {
@@ -18,11 +17,13 @@ function App() {
           {/* Content will be dynamically replaced based on the route */}
 
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/nav/*" element={<Home />}>
+              <Route path=":tableName.list" element={<DynamicList />} />
+              <Route path=":tableName.form" element={<DynamicForm />} />
+            </Route>
             <Route path="/paperbase/*" element={<PaperBase />} />
-            {/* <Route path="/table_list" element={<TableList />} /> */}
-            <Route path="/:tableName.list" element={<DynamicList />} />
-            <Route path="/:tableName.form" element={<DynamicForm />} />
+            {/* <Route path="/:tableName.list" element={<DynamicList />} />
+            <Route path="/:tableName.form" element={<DynamicForm />} /> */}
           </Routes>
         </div>
       </Suspense>

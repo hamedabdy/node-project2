@@ -3,24 +3,27 @@ import React, { useState } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 // Styles
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import TextField from "@mui/material/TextField";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
 import { alpha } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Paper,
+  IconButton,
+  Tooltip,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
+
 const EnhancedToolbar = (props) => {
-  const { numSelected, tableName } = props;
+  const { numSelected, tableName, table } = props;
 
   const [toolbarSearchValue, settoolbarSearchValue] = useState("");
   const [toolbarSearchField, setToolbarSearchField] = useState("name");
@@ -123,8 +126,9 @@ const EnhancedToolbar = (props) => {
               variant="h7"
               id="tableTitle"
               component="div"
+              aria-label={tableName}
             >
-              {tableName}s
+              {table.label}
             </Typography>
             <ToolbarSearch />
             <Typography

@@ -25,7 +25,7 @@ const TableList = ({ onTableSelect }) => {
   }, []);
 
   const handleItemClick = (tableName) => {
-    const newUrl = `/${tableName}.list`;
+    const newUrl = `./${tableName}.list`;
     onTableSelect(newUrl);
     window.history.pushState(null, "", newUrl);
   };

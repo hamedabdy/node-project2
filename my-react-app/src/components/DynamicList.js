@@ -1,6 +1,6 @@
 // import PropTypes from "prop-types"; // data type checking
 import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import ApiService from "../services/ApiService";
 
@@ -26,11 +26,13 @@ import Utils from "./dynamicList/Utils";
 const DynamicList = () => {
   const { tableName } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [sysparmQuery, setsysparmQuery] = useState(
     searchParams.get("sysparm_query")
   );
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
+  const [table, setTable] = useState({}); // table metadata
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("sys_updated_on");
   const [selected, setSelected] = useState([]);
@@ -40,21 +42,16 @@ const DynamicList = () => {
 
   useEffect(() => {
     console.log("DynList - Start of useEffect !");
-    // console.log(
-    //   "dyn list - usereffect - search params : %o\nquery : %s\ntablename : %s",
-    //   searchParams,
-    //   sysparmQuery,
-    //   tableName
-    // );
 
     const getData = async () => {
       try {
         const cols = await ApiService.getColumns(tableName);
+        const table = await ApiService.getTable(tableName);
         const resp = await ApiService.getData({
           table_name: tableName,
           sysparm_query: sysparmQuery,
         });
-
+        setTable(table.data);
         setColumns(cols.data.rows);
         setData(resp.data);
       } catch (error) {
@@ -104,6 +101,10 @@ const DynamicList = () => {
     setSelected(newSelected);
   };
 
+  const handleRowClick = (id) => {
+    navigate(`/${tableName}.form?sys_id=${id}`);
+  };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -135,7 +136,11 @@ const DynamicList = () => {
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
-        <EnhancedToolbar numSelected={selected.length} tableName={tableName} />
+        <EnhancedToolbar
+          numSelected={selected.length}
+          tableName={tableName}
+          table={table}
+        />
         <QueryFilter />
         <TableContainer
           component={Paper}
@@ -162,7 +167,10 @@ const DynamicList = () => {
               columns={columns}
               visibleRows={visibleRows}
               isSelected={isSelected}
-              handleClick={handleClick}
+              handleClick={(event, id) => {
+                handleClick(event, id);
+                handleRowClick(id);
+              }}
               emptyRows={emptyRows}
               dense={dense}
               tableName={tableName}

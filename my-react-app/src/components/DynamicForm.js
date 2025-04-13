@@ -38,37 +38,33 @@ const DynamicForm = () => {
   const [error, setError] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const loadPage = async () => {
-    console.log("DynForm - function load page !");
-
-    try {
-      if (tableName) {
-        const cols = await ApiService.getColumns(tableName);
-        setColumns(cols.data.rows); // Show fields in the form
-
-        if (sysID && sysID !== "-1") {
-          const resp = await ApiService.getData({
-            table_name: tableName,
-            sys_id: sysID,
-          });
-          setFormData(resp.data.pop());
-        }
-      }
-    } catch (error) {
-      console.error("Error loading page:", error);
-      setErrorMessage("Failed to fetch record");
-    }
-  };
-
   useEffect(() => {
     console.log("DynForm - Start of useEffet !");
-    // Use useEffect to reset the state variable after the component has re-rendered
+
+    const loadPage = async () => {
+      try {
+        if (tableName) {
+          const cols = await ApiService.getColumns(tableName);
+          setColumns(cols.data.rows);
+
+          if (sysID && sysID !== "-1") {
+            const resp = await ApiService.getData({
+              table_name: tableName,
+              sys_id: sysID,
+            });
+            setFormData(resp.data.pop());
+          }
+        }
+      } catch (error) {
+        console.error("Error loading page:", error);
+        setErrorMessage("Failed to fetch record");
+      }
+    };
 
     loadPage();
 
-    if (reloadData) setReloadData(false); // if page has reloaded then stop
+    if (reloadData) setReloadData(false);
     return () => {
-      // will run on every unmount.
       console.log("DynForm - component is unmounting");
     };
     // eslint-disable-next-line
