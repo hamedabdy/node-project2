@@ -3,7 +3,7 @@ const { DataTypes, Model } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
-const { log } = require("util");
+const { log, inspect } = require("util");
 const utils = new Utils();
 // const SysGlideObject = require("./SysGlideObject");
 // const SysMetaData = require("./SysMetaData");
@@ -299,24 +299,22 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     }
 
     static async deleteCollection(data, options) {
-      console.log("sysDictionary - deleteCollection - data : %o", data);
-
       data.internal_type = "collection";
       try {
         // Get the collection record and all table fields
         await super
-          .findAll({
-            where: { name: data.where.name },
+          .findOne({
+            where: { name: data.where.name, internal_type: data.internal_type },
           })
-          .then((collection) => {
+          .then(async (collection) => {
             data.where = collection.dataValues;
-            console.log(
-              "sysDictionary - deleteCollection - collection : %o",
-              collection.dataValues
-            );
-
-            this.destroy(data, options);
-            return result;
+            if (utils.nil(collection)) {
+              console.log(
+                "sysDictionary - deleteCollection - No collection found"
+              );
+              return;
+            }
+            return this.destroy(data, options);
           });
       } catch (e) {
         console.error("sysDictionary - deleteCollection - error : %s", e);

@@ -66,9 +66,10 @@ module.exports = (sequelize, parent, sysDictionary) => {
             .catch((e) => {
               console.log("SysDbObject - error : %s", e);
             });
-          this.dropTableIfExists(name);
-          parent.deleteRow(data, options);
-          sysDictionary.deleteCollection(data, options);
+          // must first delete related records
+          await sysDictionary.deleteCollection(data, options);
+          await parent.deleteRow(data, options);
+          await this.dropTableIfExists(name);
         } catch (e) {
           console.log("SysDbObject - error : %s", e);
         }
