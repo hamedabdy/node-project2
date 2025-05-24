@@ -45,7 +45,9 @@ const ApiService = {
   getData: async (parms) => {
     const uri = `${tableApiUrl}/rows/${parms.table_name}`;
     try {
-      const response = await axios.get(uri, { params: parms });
+      const response = await axios.get(uri, {
+        params: { sysparm_query: parms.sysparm_query },
+      });
       return response.data;
     } catch (error) {
       console.error("Error fetching data:", error);

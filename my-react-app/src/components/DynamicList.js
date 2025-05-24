@@ -6,11 +6,11 @@ import ApiService from "../services/ApiService";
 
 // Styles
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+// import Typography from "@mui/material/Typography";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
 import Paper from "@mui/material/Paper";
-import CircularProgress from "@mui/material/CircularProgress";
+// import CircularProgress from "@mui/material/CircularProgress";
 import TablePagination from "@mui/material/TablePagination";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
@@ -101,10 +101,6 @@ const DynamicList = () => {
     setSelected(newSelected);
   };
 
-  const handleRowClick = (id) => {
-    navigate(`/${tableName}.form?sys_id=${id}`);
-  };
-
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -141,7 +137,7 @@ const DynamicList = () => {
           tableName={tableName}
           table={table}
         />
-        <QueryFilter />
+        <QueryFilter tableName={tableName} setData={setData} />
         <TableContainer
           component={Paper}
           elevation={1}
@@ -169,7 +165,6 @@ const DynamicList = () => {
               isSelected={isSelected}
               handleClick={(event, id) => {
                 handleClick(event, id);
-                handleRowClick(id);
               }}
               emptyRows={emptyRows}
               dense={dense}

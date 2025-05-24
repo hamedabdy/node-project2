@@ -7,7 +7,7 @@ const BreadCrumbs = (props) => {
   const { tableName } = props;
   return (
     <Breadcrumbs aria-label="breadcrumb">
-      <Link color="inherit" href="/">
+      <Link color="inherit" href="/nav">
         Home
       </Link>
       <Link
@@ -15,7 +15,7 @@ const BreadCrumbs = (props) => {
         sx={{
           textTransform: "capitalize",
         }}
-        href={`/${tableName}.list`}
+        href={`./${tableName}.list`}
       >
         {tableName}s
       </Link>

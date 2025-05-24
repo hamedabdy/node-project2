@@ -138,15 +138,18 @@ class Sequelizer {
 
     if (!sys_id) {
       let query = {};
-      if (sysparm_query) {
+      if (!sysparm_query) {
+        console.log("No query parameters provided.");
+      } else {
         const q = query_litteral.encodedQueryToSequelize(sysparm_query);
         query = { where: q };
         if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
-      }
 
+        console.log("Filtered Query: %o", query);
+      }
       return await Model.findAll(query)
         .then((result) => {
-          return { data: result, status: "success", err: "" };
+          return { data: result, status: "success" };
         })
         .catch((e) => {
           console.error("Get rows error : ", e);

@@ -116,7 +116,7 @@ const EnhancedTableBody = (props) => {
                 <IconButton
                   sx={{ verticalAlign: "center" }}
                   component={ReactRouterLink}
-                  to={`/${tableName}.form?sys_id=${row["sys_id"]}`}
+                  to={`../${tableName}.form?sys_id=${row["sys_id"]}`}
                 >
                   <InfoOutlinedIcon />
                 </IconButton>
@@ -148,7 +148,7 @@ const EnhancedTableBody = (props) => {
                   >
                     <Link
                       component={ReactRouterLink}
-                      to={`/${tableName}.form?${c.element}=${row[c.element]}`}
+                      to={`../${tableName}.form?sys_id=${row[c.element]}`}
                     >
                       {row[c.element]}
                     </Link>

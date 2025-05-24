@@ -44,13 +44,6 @@ const EnhancedTableHead = (props) => {
     console.log("event target => %s : %s", target.name, target.value);
   };
 
-  const filteredRows = visibleRows.filter((row) =>
-    // row.name.toLowerCase().includes(localFilters.toLowerCase())
-    Object.entries(localFilters).every(([columnName, filterValue]) =>
-      String(row[columnName]).toLowerCase().includes(filterValue.toLowerCase())
-    )
-  );
-
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };

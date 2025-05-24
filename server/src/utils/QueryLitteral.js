@@ -21,78 +21,53 @@ class QueryLitteral {
   // Function to convert encoded query to Sequelize query
   encodedQueryToSequelize(encodedQuery) {
     const conditions = encodedQuery.split("^");
-    let where = {};
-    let currentOrGroup = [];
+    let where = { [Op.or]: [] }; // Initialize the query with an OR group
+    let currentAndGroup = []; // Temporary array to hold AND conditions
 
     // Define a regex to match the field, operator, and value
     const conditionRegex =
       /([^=<>!]+)([=<>!]+|startswith|endswith|contains|doesnotcontain|between|isempty|isnotempty)(.+)/i;
 
     conditions.forEach((condition) => {
-      //   utils.warn("querylitteral - condtion : %s", condition);
-      // Trim whitespace
       condition = condition.trim();
-
-      // Handle OR conditions
-      if (condition.toUpperCase().startsWith("OR")) {
-        if (currentOrGroup.length > 0) {
-          where[Op.or] = where[Op.or] || [];
-          where[Op.or].push(currentOrGroup);
-          currentOrGroup = []; // Reset current OR group
-        }
-        condition = condition.replace(/^OR/, "").trim();
-      }
-
-      // TODO : Handle New Query (NQ)
-      if (condition.toUpperCase().startsWith("NQ")) {
-        // utils.warn("querylitteral - inside NQ condtion : %s", condition);
-
-        if (currentOrGroup.length > 0) {
-          where[Op.or] = where[Op.or] || [];
-          where[Op.or].push(currentOrGroup);
-          currentOrGroup = []; // Reset current OR group
-        }
-        // return; // Skip adding NQ itself
-      }
 
       // Match the condition using regex
       const match = condition.match(conditionRegex);
       if (match) {
-        // utils.warn("querylitteral - inside match - condition : %s", condition);
-        const field = match[1].trim();
+        let field = match[1].trim().toLowerCase();
+
+        // Ensure the field name does not include the 'OR' prefix
+        if (field.toUpperCase().startsWith("OR")) {
+          field = field.replace(/^OR/i, "").trim();
+        }
+
         const operator = match[2].trim();
-        let value = match[3].trim();
+        let value = match[3].trim().toLowerCase();
 
-        if (value.toLowerCase() === "true") value = true;
-        else if (value.toLowerCase() === "false") value = false;
+        if (value === "true") value = true;
+        else if (value === "false") value = false;
 
-        // utils.warn(
-        //   "querylitteral - inside match - field : %s\noperator : %s\nvalue : %s",
-        //   field,
-        //   operator,
-        //   value
-        // );
-
-        // Map the operator to Sequelize
         const sequelizeOperator = this._operatorToSequelize(operator);
-
-        // Create the condition object
         const conditionObject = { [field]: { [sequelizeOperator]: value } };
-        // utils.warn(
-        //   "querylitteral - inside match - condition object : %o",
-        //   conditionObject
-        // );
-        currentOrGroup.push(conditionObject);
+
+        // Handle OR conditions
+        if (condition.toUpperCase().startsWith("OR")) {
+          if (currentAndGroup.length > 0) {
+            where[Op.or].push({ [Op.and]: currentAndGroup });
+            currentAndGroup = []; // Reset the AND group
+          }
+          where[Op.or].push(conditionObject);
+        } else {
+          // Add to the current AND group
+          currentAndGroup.push(conditionObject);
+        }
       }
     });
 
-    // Push any remaining conditions in the current OR group
-    if (currentOrGroup.length > 0) {
-      where[Op.or] = where[Op.or] || [];
-      where[Op.or].push(currentOrGroup);
+    // Push the last AND group if it exists
+    if (currentAndGroup.length > 0) {
+      where[Op.or].push({ [Op.and]: currentAndGroup });
     }
-
-    // utils.warn("querylitteral - inside match - where : %o", where);
 
     return where;
   }

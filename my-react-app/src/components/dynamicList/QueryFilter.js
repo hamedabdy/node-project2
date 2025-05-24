@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import ApiService from "../../services/ApiService";
+
 // Styles
 import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
@@ -9,50 +11,153 @@ import Tooltip from "@mui/material/Tooltip";
 import TextField from "@mui/material/TextField";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import { Box } from "@mui/material";
 
 const QueryFilter = (props) => {
-  const {} = props;
+  const { tableName, setData } = props;
 
   const [showFilterQuery, setShowFilterQuery] = useState(false);
+  const [conditions, setConditions] = useState([
+    { field: "", operator: "", value: "", type: "AND" },
+  ]);
 
   const filterListIconClick = () => {
     setShowFilterQuery(!showFilterQuery);
   };
 
+  const addCondition = (type) => {
+    const newCondition = { field: "", operator: "", value: "", type };
+    setConditions([...conditions, newCondition]);
+  };
+
+  const updateCondition = (index, key, value) => {
+    const updatedConditions = [...conditions];
+    updatedConditions[index][key] = value;
+    setConditions(updatedConditions);
+  };
+
+  const handleRunFilter = async () => {
+    const query = conditions
+      .map((cond, index) => {
+        const prefix = index === 0 ? "" : cond.type === "AND" ? "^" : "^OR";
+        return `${prefix}${cond.field}${cond.operator}${cond.value}`;
+      })
+      .join("");
+
+    try {
+      const resp = await ApiService.getData({
+        table_name: tableName,
+        sysparm_query: query,
+      });
+      console.log("QUERYFILTER - Query result:", resp);
+      setData(resp.data);
+    } catch (error) {
+      console.error("Error querying the server:", error);
+    }
+  };
+
   return (
-    <Paper>
+    <Paper style={{ marginLeft: 10 }}>
       <Grid container>
-        <Paper>
+        <Box>
           <Tooltip title="Filter list">
             <IconButton onClick={filterListIconClick}>
               <FilterAltOutlinedIcon color="primary" />
             </IconButton>
           </Tooltip>
-          {"queryValue"}
-        </Paper>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setConditions([]); // Clear all conditions
+              handleRunFilter(); // Reload the list without any conditions
+            }}
+            style={{ textDecoration: "none", color: "blue", cursor: "pointer" }}
+          >
+            All{conditions.length > 0 ? " >" : ""}
+          </a>
+          {conditions.length > 0 &&
+            conditions
+              .map((cond, index) => {
+                const prefix = index === 0 ? "" : " >"; // Ensure ' >' is added only after the first condition
+                return `${prefix}${cond.field}${cond.operator}${cond.value}`;
+              })
+              .join("")}
+        </Box>
       </Grid>
       <Grid container sx={{ display: showFilterQuery ? "grid" : "none" }}>
-        <Paper>
-          <Button variant="outlined" label="Run filter">
+        <Box>
+          <Button
+            variant="outlined"
+            style={{ marginBottom: 10 }}
+            onClick={handleRunFilter}
+          >
             Run filter
           </Button>
-        </Paper>
-        <Paper>
-          <TextField label="Field" size="small" />
-          <TextField label="Operator" size="small" />
-          <TextField label="Value" size="small" />
-          <Button variant="outlined" label="OR">
-            OR
+          <Button variant="outlined" style={{ marginBottom: 10 }}>
+            New query
           </Button>
-          <Button variant="outlined" label="AND">
-            AND
-          </Button>
-          <Tooltip title="Remove condition">
-            <IconButton onClick={filterListIconClick}>
-              <RemoveCircleOutlineIcon />
-            </IconButton>
-          </Tooltip>
-        </Paper>
+        </Box>
+        <Box>
+          {conditions.map((condition, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                marginBottom: 10,
+                marginLeft: condition.type === "OR" ? 20 : 0, // Add left margin for OR conditions
+              }}
+            >
+              <TextField
+                label="Field"
+                size="small"
+                value={condition.field}
+                onChange={(e) =>
+                  updateCondition(index, "field", e.target.value)
+                }
+              />
+              <TextField
+                label="Operator"
+                size="small"
+                value={condition.operator}
+                onChange={(e) =>
+                  updateCondition(index, "operator", e.target.value)
+                }
+              />
+              <TextField
+                label="Value"
+                size="small"
+                value={condition.value}
+                onChange={(e) =>
+                  updateCondition(index, "value", e.target.value)
+                }
+              />
+              <Button
+                variant="outlined"
+                onClick={() => addCondition("OR")}
+                style={{ marginLeft: 10 }}
+              >
+                OR
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => addCondition("AND")}
+                style={{ marginLeft: 10 }}
+              >
+                AND
+              </Button>
+              <Tooltip title="Remove condition">
+                <IconButton
+                  onClick={() =>
+                    setConditions(conditions.filter((_, i) => i !== index))
+                  }
+                >
+                  <RemoveCircleOutlineIcon />
+                </IconButton>
+              </Tooltip>
+            </div>
+          ))}
+        </Box>
       </Grid>
     </Paper>
   );
