@@ -2,16 +2,17 @@ import PropTypes from "prop-types"; // data type checking
 import React, { useState } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
+import ToolbarActions from "./ToolbarActions";
+
 // Styles
 import { alpha } from "@mui/material/styles";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
+import MenuIcon from '@mui/icons-material/Menu';
 
 import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
   Paper,
   IconButton,
   Tooltip,
@@ -30,8 +31,8 @@ const EnhancedToolbar = (props) => {
 
   function ToolbarSearch() {
     return (
-      <Paper sx={{ marginLeft: 1 }}>
-        <FormControl sx={{ minWidth: 100 }}>
+      <Paper sx={{ marginLeft: 3 }}>
+        <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="toolbar-search-select-autowidth-label">
             Search
           </InputLabel>
@@ -55,7 +56,7 @@ const EnhancedToolbar = (props) => {
         <FormControl>
           <TextField
             label="Search"
-            sx={{ width: 100 }}
+            sx={{ width: 250 }}
             id="toolbar-search-input"
             size="small"
             value={toolbarSearchValue}
@@ -96,25 +97,39 @@ const EnhancedToolbar = (props) => {
           </Typography>
         ) : (
           <>
-            <Tooltip
-              aria-label="Go back"
-              sx={{
-                ...{
-                  bgcolor: (theme) =>
-                    alpha(
-                      theme.palette.primary.main,
-                      theme.palette.action.activatedOpacity
-                    ),
-                },
-              }}
-            >
+            <Tooltip aria-label="Go back">
               <IconButton
                 component={ReactRouterLink}
-                to={`/`}
-                color="inherit"
-                edge="start"
+                to={"../"}
+                sx={{
+                  backgroundColor: "#E9E9E9", // light grey
+                  borderRadius: 0.5, // squared corners (4px)
+                  "&:hover": {
+                    backgroundColor: "#e0e0e0", // slightly darker on hover
+                  },
+                  boxShadow: "none",
+                  padding: "4px",
+                }}
               >
                 <ArrowLeftIcon fontSize="large" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip aria-label="Menu">
+              <IconButton
+                component={ReactRouterLink}
+                to={"#"}
+                sx={{
+                  marginLeft: 1,
+                  backgroundColor: "#E9E9E9", // light grey
+                  borderRadius: 0.5, // squared corners (4px)
+                  "&:hover": {
+                    backgroundColor: "#e0e0e0", // slightly darker on hover
+                  },
+                  boxShadow: "none",
+                  padding: "4px",
+                }}
+              >
+                <MenuIcon fontSize="large" />
               </IconButton>
             </Tooltip>
             <Typography
@@ -122,6 +137,7 @@ const EnhancedToolbar = (props) => {
                 // flex: "0.2 1 50%",
                 fontWeight: "bold",
                 textTransform: "capitalize",
+                marginLeft: 1
               }}
               variant="h7"
               id="tableTitle"
@@ -144,20 +160,8 @@ const EnhancedToolbar = (props) => {
           </>
         )}
 
-        {numSelected > 0 ? (
-          <Tooltip title="Delete">
-            <IconButton>
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
-        ) : (
-          <>
-            {/* Add your dropdown list here */}
-            <Button variant="contained" href={`/${tableName}.form?sys_id=-1`}>
-              New
-            </Button>
-          </>
-        )}
+        {/* Actions moved to ToolbarActions */}
+        <ToolbarActions tableName={tableName} numSelected={numSelected} />
       </Toolbar>
     </AppBar>
   );

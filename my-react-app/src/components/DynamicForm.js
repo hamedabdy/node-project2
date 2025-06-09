@@ -16,9 +16,6 @@ import ApiService from "../services/ApiService";
 
 // import { styled } from "@mui/system";
 import { Paper, Typography, Grid, Box, CircularProgress } from "@mui/material";
-// import { element } from "prop-types";
-// import SaveIcon from "@mui/icons-material/Save";
-// import DeleteIcon from "@mui/icons-material/Delete";
 
 // Import Local Components
 import PageHeader from "./dynamicForm/PageHeader";
@@ -70,7 +67,25 @@ const DynamicForm = () => {
     // eslint-disable-next-line
   }, [tableName, sysID, reloadData]);
 
+  /*
   // TODO event base form update when data changes at server side
+  // function useTraceUpdate(props) {
+  //   const prev = useRef(props);
+  //   useEffect(() => {
+  //     const changedProps = Object.entries(props).reduce((ps, [k, v]) => {
+  //       if (prev.current[k] !== v) {
+  //         ps[k] = [prev.current[k], v];
+  //       }
+  //       return ps;
+  //     }, {});
+  //     if (Object.keys(changedProps).length > 0) {
+  //       console.log("Changed props:", changedProps);
+  //     }
+  //     prev.current = props;
+  //   });
+  // }
+*/
+
 
   const handleInputChange = (columnName, value) => {
     // Update form data when input values change
@@ -144,22 +159,6 @@ const DynamicForm = () => {
       setErrorMessage("Error deleting row:", error);
     }
   };
-
-  // function useTraceUpdate(props) {
-  //   const prev = useRef(props);
-  //   useEffect(() => {
-  //     const changedProps = Object.entries(props).reduce((ps, [k, v]) => {
-  //       if (prev.current[k] !== v) {
-  //         ps[k] = [prev.current[k], v];
-  //       }
-  //       return ps;
-  //     }, {});
-  //     if (Object.keys(changedProps).length > 0) {
-  //       console.log("Changed props:", changedProps);
-  //     }
-  //     prev.current = props;
-  //   });
-  // }
 
   return (
     <Paper
