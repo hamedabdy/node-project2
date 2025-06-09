@@ -48,15 +48,13 @@ class Sequelizer {
 
   async testConnection() {
     // Test the connection
-    this.sequelize
+    return await this.sequelize
       .authenticate()
       .then(() => {
-        console.log("Connection has been established successfully.");
-        return "success";
+        return {response : "success"}
       })
       .catch((err) => {
-        console.error("Unable to connect to the database:", err);
-        return "error : " + err;
+        return {response : "error : " + err};
       });
   }
 

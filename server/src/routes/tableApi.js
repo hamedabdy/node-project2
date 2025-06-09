@@ -6,15 +6,15 @@ const sequelizer = new Sequelizer();
 
 const utils = require("../utils/utils"); // Load utilies
 
-const backup = require("../services/DbBackup");
+const dbBackup = require("../services/DbBackup");
 
 /*
  * SEQUELIZE ROUTES
  */
 // TEST DB CONNECTION
 router.get("/test_connection", async (req, res) => {
-  const result = sequelizer.testConnection();
-  res.json({ response: result });
+  const result = await sequelizer.testConnection();
+  res.json(result);
 });
 
 // SHOW TABLES
@@ -106,11 +106,14 @@ router.delete("/rows/:table_name", async (req, res) => {
  */
 router.get("/db-backup", async (req, res) => {
   try {
-    await backup.runBackup();
+    // Allow ?appendDate=true to control filename
+    const appendDate = req.query.appendDate === "true";
+    console.log("DB BACKUP - appendDate: ", appendDate);
+    await dbBackup(appendDate);
     res.json({ status: "success", message: "DB backup is triggerd" });
   } catch (e) {
     console.error("DB BACKUP - error: ", e);
-    res.status(500).json({ error: "DB BACKUP : Internal Server Error" });
+    res.status(500).json({ error: "DB BACKUP : Internal Server Error", message: e.message });
   }
 });
 
