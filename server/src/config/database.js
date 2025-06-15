@@ -1,10 +1,11 @@
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env") });
 const mariadb = require("mariadb");
 
 const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "admin",
-  password: process.env.DB_PASSWORD || "hamed",
-  database: process.env.DB_DATABASE || "node-project",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 };
 
 const pool = mariadb.createPool(dbConfig);
