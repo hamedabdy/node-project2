@@ -17,7 +17,7 @@ import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 const EnhancedTableHead = (props) => {
   const {
     columns,
-    visibleRows,
+    // visibleRows,
     onSelectAllClick,
     order,
     orderBy,

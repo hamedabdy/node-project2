@@ -146,8 +146,17 @@ const DynamicList = () => {
           <Table
             stickyHeader
             aria-label="sticky table"
-            sx={{ minWidth: 750 }}
-            size={dense ? "small" : "medium"}
+            sx={{
+              minWidth: 750,
+              ...(dense && {
+                "& th, & td": {
+                  padding: "2px 8px",
+                  fontSize: "0.80rem",
+                  lineHeight: 1.2,
+                },
+              }),
+            }}
+            size={!dense ? "small" : ""}
           >
             <EnhancedTableHead
               columns={columns}

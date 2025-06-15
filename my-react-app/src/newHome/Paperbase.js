@@ -9,14 +9,12 @@ import Navigator from "./Navigator";
 import Content from "./Content";
 import Header from "./Header";
 
-import { Routes, Route } from "react-router-dom";
-
 function Copyright() {
   return (
     <Typography variant="body2" color="text.secondary" align="center">
       {"Copyright © "}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
+      <Link color="inherit" href="#">
+        My ITSM APP
       </Link>{" "}
       {new Date().getFullYear()}.
     </Typography>
@@ -181,7 +179,7 @@ export default function Paperbase() {
   return (
     <ThemeProvider theme={theme}>
       <Header onDrawerToggle={handleDrawerToggle} />
-      <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      <Box sx={{ display: "flex" }}>
         <CssBaseline />
 
         <Box
@@ -202,22 +200,13 @@ export default function Paperbase() {
             sx={{ display: { sm: "block", xs: "none" } }}
           />
         </Box>
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflowX: "auto",
-            overflowY: "auto",
-            maxHeight: "70vh",
-          }}
-        >
+        <Box>
           <Box component="main" sx={{ flex: 1, bgcolor: "#eaeff1" }}>
-            <Content />
+            <Content drawerWidth={drawerWidth} />
           </Box>
-          <Box component="footer" sx={{ p: 2, bgcolor: "#eaeff1" }}>
+          {/* <Box component="footer" sx={{ p: 2, bgcolor: "#eaeff1" }}>
             <Copyright />
-          </Box>
+          </Box> */}
         </Box>
       </Box>
     </ThemeProvider>

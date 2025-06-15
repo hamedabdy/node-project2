@@ -2,14 +2,14 @@ import React from "react";
 import PropTypes from "prop-types";
 import {
   Button,
-  IconButton,
-  Tooltip,
+  // IconButton,
+  // Tooltip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+// import DeleteIcon from "@mui/icons-material/Delete";
 
 const ToolbarActions = ({ tableName, numSelected }) => {
   /*

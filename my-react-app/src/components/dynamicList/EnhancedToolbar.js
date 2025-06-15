@@ -1,5 +1,5 @@
 import PropTypes from "prop-types"; // data type checking
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 import ToolbarActions from "./ToolbarActions";
@@ -21,6 +21,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Box,
 } from "@mui/material";
 
 const EnhancedToolbar = (props) => {
@@ -31,7 +32,7 @@ const EnhancedToolbar = (props) => {
 
   function ToolbarSearch() {
     return (
-      <Paper sx={{ marginLeft: 3 }}>
+      <Box sx={{ marginLeft: 3}}>
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="toolbar-search-select-autowidth-label">
             Search
@@ -63,15 +64,15 @@ const EnhancedToolbar = (props) => {
             autoComplete="true"
           ></TextField>
         </FormControl>
-      </Paper>
+      </Box>
     );
   }
 
   return (
     <AppBar
-      elevation={1}
+      elevation={2}
       color="default"
-      sx={{ position: "relative", zIndex: "100" }}
+      sx={{ position: "relative", zIndex: 100, padding: 1 }}
     >
       <Toolbar
         sx={{
@@ -108,7 +109,7 @@ const EnhancedToolbar = (props) => {
                     backgroundColor: "#e0e0e0", // slightly darker on hover
                   },
                   boxShadow: "none",
-                  padding: "4px",
+                  padding: 0.5,
                 }}
               >
                 <ArrowLeftIcon fontSize="large" />
@@ -126,7 +127,7 @@ const EnhancedToolbar = (props) => {
                     backgroundColor: "#e0e0e0", // slightly darker on hover
                   },
                   boxShadow: "none",
-                  padding: "4px",
+                  padding: 0.5,
                 }}
               >
                 <MenuIcon fontSize="large" />

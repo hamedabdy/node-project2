@@ -21,9 +21,10 @@ function App() {
               <Route path=":tableName.list" element={<DynamicList />} />
               <Route path=":tableName.form" element={<DynamicForm />} />
             </Route>
-            <Route path="/paperbase/*" element={<PaperBase />} />
-            {/* <Route path="/:tableName.list" element={<DynamicList />} />
-            <Route path="/:tableName.form" element={<DynamicForm />} /> */}
+            <Route path="/paperbase/*" element={<PaperBase />} >
+              <Route path=":tableName.list" element={<DynamicList />} />
+              <Route path=":tableName.form" element={<DynamicForm />} />
+            </Route>
           </Routes>
         </div>
       </Suspense>

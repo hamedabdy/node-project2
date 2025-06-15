@@ -10,19 +10,23 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
 
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+// import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-export default function Content() {
+export default function Content({ drawerWidth = 250 }) {
   return (
-    <Paper sx={{ maxWidth: 936, margin: "auto", overflow: "hidden" }}>
+    <Box
+      sx={{maxWidth: `calc(100vw - ${drawerWidth}px)`}}
+    >
       <AppBar
         position="static"
         color="default"
         elevation={0}
         sx={{ borderBottom: "1px solid rgba(0, 0, 0, 0.12)" }}
       >
-        <Toolbar>
+        <Toolbar sx={{ display: "none" }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item>
               <SearchIcon color="inherit" sx={{ display: "block" }} />
@@ -51,9 +55,21 @@ export default function Content() {
           </Grid>
         </Toolbar>
       </AppBar>
-      <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
+      {/* <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
         No users for this project yet
-      </Typography>
-    </Paper>
+      </Typography> */}
+      <Box
+        component="section"
+        sx={{
+          flex: 1,
+          width: "100%",
+          minWidth: 0,
+          overflow: "hidden",
+          p: 0,
+        }}
+      >
+        <Outlet />
+      </Box>
+    </Box>
   );
 }

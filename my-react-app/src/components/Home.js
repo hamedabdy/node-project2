@@ -7,7 +7,7 @@ import {
   IconButton,
   Box,
   Menu,
-  Typography,
+  // Typography,
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -95,7 +95,6 @@ const Home = () => {
           overflow: "auto",
         }}
       >
-        {" "}
         {/* Allow scrolling for overflowing content */}
         <Outlet />
       </Box>
