@@ -13,7 +13,6 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Paper,
   IconButton,
   Tooltip,
   TextField,
@@ -72,12 +71,12 @@ const EnhancedToolbar = (props) => {
     <AppBar
       elevation={2}
       color="default"
-      sx={{ position: "relative", zIndex: 100, padding: 1 }}
+      sx={{ position: "relative", zIndex: 100, padding: 1}}
     >
       <Toolbar
         sx={{
-          pl: { sm: 2 },
-          pr: { xs: 1, sm: 1 },
+          pl: { sm: 1 },
+          pr: { sm: 1 },
           ...(numSelected > 0 && {
             bgcolor: (theme) =>
               alpha(

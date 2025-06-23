@@ -1,8 +1,8 @@
-import * as React from "react";
+// import * as React from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
+// import Typography from "@mui/material/Typography";
+// import Paper from "@mui/material/Paper";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -18,7 +18,7 @@ import { Box } from "@mui/material";
 export default function Content({ drawerWidth = 250 }) {
   return (
     <Box
-      sx={{maxWidth: `calc(100vw - ${drawerWidth}px)`}}
+      sx={{maxWidth: `calc(100vw - ${drawerWidth}px - 16px)`}} // temp solution to avoid horizontal scroll
     >
       <AppBar
         position="static"
