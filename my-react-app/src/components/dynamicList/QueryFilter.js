@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import ApiService from "../../services/ApiService";
+import OperatorSelect from "./OperatorSelect";
 
 // Styles
 import Button from "@mui/material/Button";
@@ -57,7 +58,7 @@ const QueryFilter = (props) => {
   };
 
   return (
-    <Paper style={{ marginLeft: 10 }}>
+    <Box sx={{ paddingLeft: 1, paddingBottom: 1, borderRadius: 0 }}>
       <Grid container>
         <Box>
           <Tooltip title="Filter list">
@@ -66,7 +67,7 @@ const QueryFilter = (props) => {
             </IconButton>
           </Tooltip>
           <a
-            href="#"
+            href="void(0)"
             onClick={(e) => {
               e.preventDefault();
               setConditions([]); // Clear all conditions
@@ -89,12 +90,12 @@ const QueryFilter = (props) => {
         <Box>
           <Button
             variant="outlined"
-            style={{ marginBottom: 10 }}
+            sx={{ marginBottom: 1, marginRight: 1 }}
             onClick={handleRunFilter}
           >
             Run filter
           </Button>
-          <Button variant="outlined" style={{ marginBottom: 10 }}>
+          <Button variant="outlined" sx={{ marginBottom: 1 }}>
             New query
           </Button>
         </Box>
@@ -115,14 +116,12 @@ const QueryFilter = (props) => {
                 onChange={(e) =>
                   updateCondition(index, "field", e.target.value)
                 }
+                sx={{ marginRight: 1 }}
               />
-              <TextField
-                label="Operator"
-                size="small"
+              <OperatorSelect
                 value={condition.operator}
-                onChange={(e) =>
-                  updateCondition(index, "operator", e.target.value)
-                }
+                onChange={(e) => updateCondition(index, "operator", e.target.value)}
+                sx={{ marginRight: 1, minWidth: 120 }}
               />
               <TextField
                 label="Value"
@@ -131,18 +130,19 @@ const QueryFilter = (props) => {
                 onChange={(e) =>
                   updateCondition(index, "value", e.target.value)
                 }
+                sx={{ marginRight: 1 }}
               />
               <Button
                 variant="outlined"
                 onClick={() => addCondition("OR")}
-                style={{ marginLeft: 10 }}
+                sx={{ marginLeft: 1 }}
               >
                 OR
               </Button>
               <Button
                 variant="outlined"
                 onClick={() => addCondition("AND")}
-                style={{ marginLeft: 10 }}
+                sx={{ marginLeft: 1 }}
               >
                 AND
               </Button>
@@ -151,6 +151,7 @@ const QueryFilter = (props) => {
                   onClick={() =>
                     setConditions(conditions.filter((_, i) => i !== index))
                   }
+                  sx={{ marginRight: 1, color: "red" }}
                 >
                   <RemoveCircleOutlineIcon />
                 </IconButton>
@@ -159,7 +160,7 @@ const QueryFilter = (props) => {
           ))}
         </Box>
       </Grid>
-    </Paper>
+    </Box>
   );
 };
 

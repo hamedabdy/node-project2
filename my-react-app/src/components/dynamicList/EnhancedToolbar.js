@@ -3,11 +3,23 @@ import { useState } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 import ToolbarActions from "./ToolbarActions";
+import ColumnSlushbucketDialog from "./ColumnSlushbucketDialog";
 
 // Styles
 import { alpha } from "@mui/material/styles";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 
 import {
   AppBar,
@@ -24,10 +36,22 @@ import {
 } from "@mui/material";
 
 const EnhancedToolbar = (props) => {
-  const { numSelected, tableName, table } = props;
+  const { numSelected, tableName, table, columns } = props;
 
   const [toolbarSearchValue, settoolbarSearchValue] = useState("");
   const [toolbarSearchField, setToolbarSearchField] = useState("name");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState(
+    columns ? columns.map(col => col.element) : (table?.visibleColumns || [])
+  );
+
+  const handleOpenDialog = () => setDialogOpen(true);
+  const handleCloseDialog = () => setDialogOpen(false);
+  const handleDialogOk = (newColumns) => {
+    setSelectedColumns(newColumns);
+    if (props.onColumnsChange) props.onColumnsChange(newColumns);
+    setDialogOpen(false);
+  };
 
   function ToolbarSearch() {
     return (
@@ -159,9 +183,30 @@ const EnhancedToolbar = (props) => {
             ></Typography>
           </>
         )}
-
         {/* Actions moved to ToolbarActions */}
         <ToolbarActions tableName={tableName} numSelected={numSelected} />
+        <Tooltip aria-label="Settings">
+          <IconButton
+            onClick={handleOpenDialog}
+            sx={{
+              backgroundColor: "#E9E9E9",
+              borderRadius: 0.5,
+              ml: 1,
+              "&:hover": { backgroundColor: "#e0e0e0" },
+              boxShadow: "none",
+              padding: 0.5,
+            }}
+          >
+            <SettingsIcon fontSize="large" />
+          </IconButton>
+        </Tooltip>
+        <ColumnSlushbucketDialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          onOk={handleDialogOk}
+          columns={columns}
+          selectedColumns={selectedColumns}
+        />
       </Toolbar>
     </AppBar>
   );
@@ -170,6 +215,7 @@ const EnhancedToolbar = (props) => {
 EnhancedToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
   tableName: PropTypes.string.isRequired,
+  columns: PropTypes.array.isRequired,
 };
 
 export default EnhancedToolbar;
