@@ -40,12 +40,16 @@ const ApiService = {
   },
 
   /**
-   * @param {Object} parms contains sys_id and tableName
+   * @param {Object} parms contains sys_id, tableName, and optionally sysparm_fields (comma-separated string of column names)
    */
   getData: async (parms) => {
     let p = {};
     p.sys_id = (parms.sys_id) ? parms.sys_id : "";
     p.sysparm_query = (parms.sysparm_query) ? parms.sysparm_query : "";
+    // Pass sysparm_fields directly if provided as a string
+    if (parms.sysparm_fields && typeof parms.sysparm_fields === 'string') {
+      p.sysparm_fields = parms.sysparm_fields;
+    }
 
     const uri = `${tableApiUrl}/rows/${parms.table_name}`;
     try {

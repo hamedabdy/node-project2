@@ -128,7 +128,7 @@ class Sequelizer {
    */
   async getRows(req) {
     const { table_name } = req.params;
-    const { sys_id, sysparm_query, sysparm_limit } = req.query;
+    const { sys_id, sysparm_query, sysparm_limit, sysparm_fields } = req.query;
     const { data } = await this.getColumns(table_name);
 
     // Define the model for the table
@@ -144,6 +144,10 @@ class Sequelizer {
         if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
 
         console.log("Filtered Query: %o", query);
+      }
+      // If sysparm_fields is provided, use it as the attributes option
+      if (sysparm_fields) {
+        query.attributes = sysparm_fields.split(",").map(f => f.trim()).filter(Boolean);
       }
       return await Model.findAll(query)
         .then((result) => {
