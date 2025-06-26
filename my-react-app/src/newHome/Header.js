@@ -22,18 +22,19 @@ function Header(props) {
 
   return (
     <React.Fragment>
-      <AppBar color="primary" position="sticky" elevation={0}>
+      <AppBar color="primary" position="sticky" elevation={3}>
         <Toolbar>
           <Grid container spacing={1} alignItems="center">
-            <Grid sx={{ display: { sm: "none", xs: "block" } }} item>
+            <Grid sx={{ display: { sm: "block", xs: "block" } }} item>
               <IconButton
-                color="inherit"
+                color="red"
                 aria-label="open drawer"
                 onClick={onDrawerToggle}
                 edge="start"
               >
-                <MenuIcon />
+                <MenuIcon/>
               </IconButton>
+              
             </Grid>
             <Grid item xs />
             <Grid item xs>
@@ -42,28 +43,13 @@ function Header(props) {
               </Typography>
             </Grid>
             <Tabs value={0} textColor="inherit">
-              <Tab label="Users" />
-              <Tab label="Sign-in method" />
-              <Tab label="Templates" />
-              <Tab label="Usage" />
+              <Tab label="All" />
+              <Tab label="Favorites" />
+              <Tab label="History" />
+              <Tab label="Workspace" />
+              <Tab label="Admin" />
             </Tabs>
-            <Grid item>
-              <Link
-                href="/"
-                variant="body2"
-                sx={{
-                  textDecoration: "none",
-                  color: lightColor,
-                  "&:hover": {
-                    color: "common.white",
-                  },
-                }}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Go to docs
-              </Link>
-            </Grid>
+            
             <Grid item>
               <Button
                 sx={{ borderColor: lightColor }}

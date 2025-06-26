@@ -1,8 +1,5 @@
-// import * as React from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-// import Typography from "@mui/material/Typography";
-// import Paper from "@mui/material/Paper";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -13,12 +10,11 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { Outlet } from "react-router-dom";
 import { Box } from "@mui/material";
 
-// import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-export default function Content({ drawerWidth = 250 }) {
+export default function Content({ drawerWidth = 300 }) {
   return (
     <Box
-      sx={{maxWidth: `calc(100vw - ${drawerWidth}px - 16px)`}} // temp solution to avoid horizontal scroll
+      sx={{maxWidth: `calc(100dvw - ${drawerWidth}px - 16px)`}} // temp solution to avoid horizontal scroll
     >
       <AppBar
         position="static"

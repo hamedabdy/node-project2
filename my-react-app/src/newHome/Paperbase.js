@@ -164,7 +164,7 @@ theme = {
   },
 };
 
-const drawerWidth = 250;
+const drawerWidth = 300;
 
 export default function Paperbase() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -184,11 +184,18 @@ export default function Paperbase() {
 
         <Box
           component="nav"
-          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+          sx={{
+            width: { sm: drawerWidth },
+            flexShrink: { sm: 0 },
+            height: "100dvh",
+            position: "sticky",
+            top: 0,
+            zIndex: 1200,
+          }}
         >
           {isSmUp ? null : (
             <Navigator
-              PaperProps={{ style: { width: drawerWidth } }}
+              PaperProps={{ style: { width: drawerWidth, height: "calc(100dvh - 48px)", marginTop: 48 } }}
               variant="temporary"
               open={mobileOpen}
               onClose={handleDrawerToggle}
@@ -196,7 +203,7 @@ export default function Paperbase() {
           )}
 
           <Navigator
-            PaperProps={{ style: { width: drawerWidth } }}
+            PaperProps={{ style: { width: drawerWidth, height: "calc(100dvh - 48px)", marginTop: 48 } }}
             sx={{ display: { sm: "block", xs: "none" } }}
           />
         </Box>
