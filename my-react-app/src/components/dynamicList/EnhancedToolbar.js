@@ -3,23 +3,13 @@ import { useState } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 import ToolbarActions from "./ToolbarActions";
-import ColumnSlushbucketDialog from "./ColumnSlushbucketDialog";
+import ListSettings from "./ListSettings";
 
 // Styles
 import { alpha } from "@mui/material/styles";
-import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
+import ArrowLeftIcon from '@mui/icons-material/ArrowBackIosNew';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
 
 import {
   AppBar,
@@ -55,7 +45,7 @@ const EnhancedToolbar = (props) => {
 
   function ToolbarSearch() {
     return (
-      <Box sx={{ marginLeft: 3}}>
+      <Box sx={{ marginLeft: 1, width: "100%"}}>
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="toolbar-search-select-autowidth-label">
             Search
@@ -132,10 +122,10 @@ const EnhancedToolbar = (props) => {
                     backgroundColor: "#e0e0e0", // slightly darker on hover
                   },
                   boxShadow: "none",
-                  padding: 0.5,
+                  padding: 1,
                 }}
               >
-                <ArrowLeftIcon fontSize="large" />
+                <ArrowLeftIcon fontSize="medium" />
               </IconButton>
             </Tooltip>
             <Tooltip aria-label="Menu">
@@ -150,15 +140,15 @@ const EnhancedToolbar = (props) => {
                     backgroundColor: "#e0e0e0", // slightly darker on hover
                   },
                   boxShadow: "none",
-                  padding: 0.5,
+                  padding: 1,
                 }}
               >
-                <MenuIcon fontSize="large" />
+                <MenuIcon fontSize="medium" />
               </IconButton>
             </Tooltip>
             <Typography
               sx={{
-                // flex: "0.2 1 50%",
+                flex: "1 1 35%",
                 fontWeight: "bold",
                 textTransform: "capitalize",
                 marginLeft: 1
@@ -171,20 +161,8 @@ const EnhancedToolbar = (props) => {
               {table.label}
             </Typography>
             <ToolbarSearch />
-            <Typography
-              sx={{
-                flex: "1 1 30%",
-                fontWeight: "bold",
-                textTransform: "capitalize",
-              }}
-              variant="h7"
-              id="tableTitle"
-              component="div"
-            ></Typography>
           </>
         )}
-        {/* Actions moved to ToolbarActions */}
-        <ToolbarActions tableName={tableName} numSelected={numSelected} />
         <Tooltip aria-label="Settings">
           <IconButton
             onClick={handleOpenDialog}
@@ -194,13 +172,16 @@ const EnhancedToolbar = (props) => {
               ml: 1,
               "&:hover": { backgroundColor: "#e0e0e0" },
               boxShadow: "none",
-              padding: 0.5,
+              padding: 1,
+              marginRight: 1,
             }}
           >
-            <SettingsIcon fontSize="large" />
+            <SettingsIcon fontSize="medium" />
           </IconButton>
         </Tooltip>
-        <ColumnSlushbucketDialog
+        {/* Actions moved to ToolbarActions */}
+        <ToolbarActions tableName={tableName} numSelected={numSelected} />
+        <ListSettings
           open={dialogOpen}
           onClose={handleCloseDialog}
           onOk={handleDialogOk}

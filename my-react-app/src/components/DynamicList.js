@@ -6,7 +6,6 @@ import ApiService from "../services/ApiService";
 
 // Styles
 import Box from "@mui/material/Box";
-// import Typography from "@mui/material/Typography";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
 import Paper from "@mui/material/Paper";
@@ -30,6 +29,8 @@ const DynamicList = () => {
   const [sysparmQuery, setsysparmQuery] = useState(
     searchParams.get("sysparm_query")
   );
+  // Add sysparm_fields state
+  const [sysparmFields, setSysparmFields] = useState(searchParams.get("sysparm_fields") || "");
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
   const [table, setTable] = useState({}); // table metadata
@@ -40,32 +41,40 @@ const DynamicList = () => {
   const [dense, setDense] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(100);
 
-  useEffect(() => {
-    console.log("DynList - Start of useEffect !");
+  // Add state for visible columns (elements)
+  const [visibleColumnElements, setVisibleColumnElements] = useState([]);
 
+  // When columns are loaded, set all as visible by default or from sysparm_fields
+  useEffect(() => {
+    if (columns && columns.length > 0) {
+      if (sysparmFields) {
+        setVisibleColumnElements(sysparmFields.split(",").filter(Boolean));
+      } else {
+        setVisibleColumnElements(columns.map(col => col.element));
+      }
+    }
+  }, [columns, sysparmFields]);
+
+  // Fetch columns and data from server, using sysparm_fields if present
+  useEffect(() => {
     const getData = async () => {
       try {
         const cols = await ApiService.getColumns(tableName);
-        const table = await ApiService.getTable(tableName);
+        setColumns(cols.data.rows);
+        // Always fetch data with sysparm_fields if present
         const resp = await ApiService.getData({
           table_name: tableName,
           sysparm_query: sysparmQuery,
+          sysparm_fields: sysparmFields
         });
-        setTable(table.data);
-        setColumns(cols.data.rows);
         setData(resp.data);
       } catch (error) {
         console.log("Error in DynamicList: ", error);
       }
     };
-
     getData();
-
-    return () => {
-      console.log("DynList - unmounting useffect");
-    };
     // eslint-disable-next-line
-  }, [tableName]);
+  }, [tableName, sysparmQuery, sysparmFields]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -116,26 +125,54 @@ const DynamicList = () => {
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
+  // Handler for column selection from EnhancedToolbar
+  const handleColumnsChange = (selectedElements) => {
+    setVisibleColumnElements(selectedElements);
+    // Update sysparm_fields in URL and state
+    const newSysparmFields = selectedElements.join(",");
+    setSysparmFields(newSysparmFields);
+    // Update URL
+    const params = new URLSearchParams(window.location.search);
+    params.set("sysparm_fields", newSysparmFields);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
+  // Only show columns and data for selected columns, preserving order from visibleColumnElements
+  const filteredColumns = visibleColumnElements
+    .map(element => columns.find(col => col.element === element))
+    .filter(Boolean);
+  const filteredData = data.map(row => {
+    const filteredRow = {};
+    visibleColumnElements.forEach(el => {
+      filteredRow[el] = row[el];
+    });
+    // Always include sys_id for row keys/links
+    if (row.sys_id) filteredRow.sys_id = row.sys_id;
+    return filteredRow;
+  });
+
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
 
   const visibleRows = React.useMemo(
     () =>
-      Utils.stableSort(data, Utils.getComparator(order, orderBy)).slice(
+      Utils.stableSort(filteredData, Utils.getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
       ),
-    [order, orderBy, page, rowsPerPage, data]
+    [order, orderBy, page, rowsPerPage, filteredData]
   );
 
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
         <EnhancedToolbar
+          columns={columns}
           numSelected={selected.length}
           tableName={tableName}
           table={table}
+          onColumnsChange={handleColumnsChange}
         />
         <QueryFilter tableName={tableName} setData={setData} />
         <TableContainer
@@ -159,17 +196,17 @@ const DynamicList = () => {
             size={!dense ? "small" : ""}
           >
             <EnhancedTableHead
-              columns={columns}
+              columns={filteredColumns}
               visibleRows={visibleRows}
               numSelected={selected.length}
               order={order}
               orderBy={orderBy}
               onSelectAllClick={handleSelectAllClick}
               onRequestSort={handleRequestSort}
-              rowCount={columns.length}
+              rowCount={filteredColumns.length}
             />
             <EnhancedTableBody
-              columns={columns}
+              columns={filteredColumns}
               visibleRows={visibleRows}
               isSelected={isSelected}
               handleClick={(event, id) => {
