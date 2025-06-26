@@ -165,8 +165,8 @@ const DynamicList = () => {
   );
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
+    <Box sx={{ width: "100dvw" }}>
+      <Paper sx={{ width: "calc(100dvw - 260px)", maxWidth: "100dvw", mb: 2, overflow: "hidden" }}>
         <EnhancedToolbar
           columns={columns}
           numSelected={selected.length}
