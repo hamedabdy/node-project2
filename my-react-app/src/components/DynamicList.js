@@ -68,6 +68,8 @@ const DynamicList = () => {
           sysparm_fields: sysparmFields
         });
         setData(resp.data);
+        const table = await ApiService.getTable(tableName);
+        setTable(table.data);
       } catch (error) {
         console.log("Error in DynamicList: ", error);
       }
