@@ -41,9 +41,6 @@ const ToolbarActions = ({ tableName, numSelected }) => {
           {/* Future actions can be added here */}
         </Select>
       </FormControl>
-      <Button variant="contained" href={`/${tableName}.form?sys_id=-1`}>
-        New
-      </Button>
     </>
   );
 };

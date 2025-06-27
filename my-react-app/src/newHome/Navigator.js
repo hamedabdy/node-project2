@@ -17,6 +17,11 @@ import SettingsInputComponentIcon from "@mui/icons-material/SettingsInputCompone
 import TimerIcon from "@mui/icons-material/Timer";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PhonelinkSetupIcon from "@mui/icons-material/PhonelinkSetup";
+import IconButton from "@mui/material/IconButton";
+import InputBase from "@mui/material/InputBase";
+import SearchIcon from "@mui/icons-material/Search";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import PushPinIcon from "@mui/icons-material/PushPin";
 
 const categories = [
   {
@@ -63,7 +68,13 @@ const itemCategory = {
 };
 
 export default function Navigator(props) {
-  const { ...other } = props;
+  const { pinned = false, onPinToggle, onRefresh, onSearch, ...other } = props;
+  const [searchValue, setSearchValue] = React.useState("");
+
+  const handleSearchChange = (e) => {
+    setSearchValue(e.target.value);
+    if (onSearch) onSearch(e.target.value);
+  };
 
   return (
     <Drawer variant="permanent" {...other}>
@@ -75,9 +86,56 @@ export default function Navigator(props) {
             fontSize: 18,
             fontWeight: 600,
             color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            py: 1,
+            px: 2,
           }}
+          disableGutters
+          secondaryAction={null}
         >
-          Navigator
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              bgcolor: "#22304a",
+              borderRadius: 1,
+              px: 1,
+              py: 0.5,
+            }}
+          >
+            <SearchIcon sx={{ color: "#fff", mr: 1 }} />
+            <InputBase
+              placeholder="Search..."
+              value={searchValue}
+              onChange={handleSearchChange}
+              sx={{
+                color: "#fff",
+                flex: 1,
+                fontSize: 16,
+                input: { p: 0 },
+              }}
+              inputProps={{ "aria-label": "search navigator" }}
+            />
+            <IconButton
+              aria-label="refresh"
+              onClick={onRefresh}
+              size="small"
+              sx={{ color: "#fff", ml: 0.5 }}
+            >
+              <RefreshIcon />
+            </IconButton>
+            <IconButton
+              aria-label="pin sidebar"
+              onClick={onPinToggle}
+              size="small"
+              sx={{ color: pinned ? "#ffd600" : "#fff", ml: 0.5 }}
+            >
+              <PushPinIcon />
+            </IconButton>
+          </Box>
         </ListItem>
         <ListItem sx={{ ...item, ...itemCategory }}>
           <ListItemIcon>

@@ -13,6 +13,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import {
   AppBar,
+  Button,
   Toolbar,
   Typography,
   IconButton,
@@ -181,6 +182,9 @@ const EnhancedToolbar = (props) => {
         </Tooltip>
         {/* Actions moved to ToolbarActions */}
         <ToolbarActions tableName={tableName} numSelected={numSelected} />
+        <Button variant="contained" href={`./${tableName}.form?sys_id=-1`}>
+        New
+      </Button>
         <ListSettings
           open={dialogOpen}
           onClose={handleCloseDialog}
