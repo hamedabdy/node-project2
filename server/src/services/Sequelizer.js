@@ -322,20 +322,6 @@ class Sequelizer {
             warning("Running afterupdate hook for table : %s"),
             model.get("sys_class_name")
           );
-
-          switch (model.get("sys_class_name")) {
-            case sys_dictionary:
-              // TODO UPDATE COLUMN
-              // this.createColumn(model.get("sys_class_name"),model.get("name"),model.get("length"));
-              break;
-
-            case sys_db_object:
-              log(warning("table name : %s"), model.get("name"));
-              // this.createTable()
-              break;
-            default:
-              break;
-          }
         });
         break;
       case "delete":

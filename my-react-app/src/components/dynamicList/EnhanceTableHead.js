@@ -84,7 +84,7 @@ const EnhancedTableHead = (props) => {
               sx={{ fontSize: "11pt", fontWeight: "600" }}
               key={`table-head-sort-label-${c.sys_id}`}
             >
-              {c.column_label}
+              {c.column_label} |{c.element}
               {orderBy === c.element ? (
                 <Box
                   component="span"

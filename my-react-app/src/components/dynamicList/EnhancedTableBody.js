@@ -1,5 +1,5 @@
 import PropTypes from "prop-types"; // data type checking
-import React, { useState } from "react";
+import React from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 // Styles

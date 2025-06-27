@@ -29,6 +29,7 @@ const DynamicForm = () => {
   const [searchParams] = useSearchParams();
   const [sysID, setSysID] = useState(searchParams.get("sys_id"));
   const [columns, setColumns] = useState([]);
+  const [table, setTable] = useState({}); // table metadata
   const [formData, setFormData] = useState({});
   const [reloadData, setReloadData] = useState(false);
   const [checkboxes, setCheckboxes] = useState({});
@@ -43,6 +44,8 @@ const DynamicForm = () => {
         if (tableName) {
           const cols = await ApiService.getColumns(tableName);
           setColumns(cols.data.rows);
+          const table = await ApiService.getTable(tableName);
+          setTable(table.data);
 
           if (sysID && sysID !== "-1") {
             const resp = await ApiService.getData({
@@ -168,7 +171,9 @@ const DynamicForm = () => {
       onSubmit={handleSubmit}
     >
       <PageHeader
-        tableName={tableName}
+        table={table}
+        sysID={sysID}
+        formData={formData}
         insertAndStay={insertAndStay}
         handleDelete={handleDelete}
       />

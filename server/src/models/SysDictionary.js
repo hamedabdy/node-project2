@@ -43,7 +43,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
      * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
-    static async createColumn(sysDictionary) {
+    static async _createColumn(sysDictionary) {
       const {
         name,
         element,
@@ -230,7 +230,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       const record = await super.create(data, options);
 
       // ignore if type is collection
-      if (data.internal_type != "collection") this.createColumn(data);
+      if (data.internal_type != "collection") this._createColumn(data);
 
       parent.create(data, options); // Create a new record in sys_metadata
 
@@ -292,33 +292,79 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       // To prevent duplicate sys_id need a new sys_id for the collection record for each table creation.
       data.sys_id = utils.generateSysID();
       data.internal_type = "collection";
-      data.sys_update_name = `${this.table_name}_${data.sys_id}`;
-      data.sys_name = data.label;
+      data.sys_update_name = `${this.table_name}_${data.name}`;
+      data.sys_name = data.name;
 
       this.create(data, options);
+
+      // Copy all fields from the super_class table to the new collection table
+      this._copyParentFields(data.name,data.super_class);
     }
 
     static async deleteCollection(data, options) {
       data.internal_type = "collection";
       try {
         // Get the collection record and all table fields
-        await super
-          .findOne({
+        await super.findOne({
             where: { name: data.where.name, internal_type: data.internal_type },
           })
           .then(async (collection) => {
             data.where = collection.dataValues;
             if (utils.nil(collection)) {
-              console.log(
-                "sysDictionary - deleteCollection - No collection found"
-              );
+              console.log("sysDictionary - deleteCollection - No collection found");
               return;
             }
+             // Delete all related records (fields) with the same name as the collection
+            await super.destroy({ where: { name: data.where.name } }, options);
+            // Delete the collection record itself
             return this.destroy(data, options);
           });
       } catch (e) {
         console.error("sysDictionary - deleteCollection - error : %s", e);
       }
+    }
+
+    /**
+     * Copy all fields from a super_class table to a new table in sys_dictionary.
+     * @param {string} tableName - The name of the new table.
+     * @param {string} superClassName - The name of the super_class table.
+     * @returns {Promise<Array>} - Array of created records.
+     */
+    static async _copyParentFields(tableName, superClassName) {
+      // Find all fields for the super_class table
+      const parentFields = await this.findAll({ where: { name: superClassName } });
+      if (!parentFields || parentFields.length === 0) return [];
+
+      // Attributes to exclude from copying
+      const exclude = [
+        "sys_update_name",
+        "sys_updated_by",
+        "sys_updated_on",
+        "sys_created_on",
+        "sys_created_by",
+        "sys_mod_count",
+        "sys_id",
+      ];
+
+      // Copy each field, changing the name to the new table
+      const created = [];
+      for (const field of parentFields) {
+        const data = { ...field.dataValues };
+        // Remove excluded attributes
+        exclude.forEach((attr) => delete data[attr]);
+        // Set the new table name
+        data.name = tableName;
+        // Generate a new sys_id for the new record
+        data.sys_id = utils.generateSysID();
+        // Set audit fields for the new record
+        data.sys_created_on = data.sys_updated_on = this.sequelize.fn("NOW");
+        data.sys_created_by = data.sys_updated_by = "system";
+        data.sys_mod_count = 0; // Reset modification count
+        data.update_name = `${this.table_name}_${data.name}_${data.element}`;
+        const record = await this.create(data);
+        created.push(record);
+      }
+      return created;
     }
   }
 

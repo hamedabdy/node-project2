@@ -82,8 +82,6 @@ module.exports = (sequelize, parent, sysDictionary) => {
      * @param {Model} SysDbObjectModel Model of the table to create
      */
     static async createTableIfNotExists(SysDbObjectModel) {
-      // TODO : Parent should come form super_class
-
       const { name, super_class } = SysDbObjectModel;
       const p = utils.nil(parent) ? SysDbObjectModel : parent;
 
