@@ -2,5 +2,8 @@
     "logPrefix": "MyApp",
     "logDateFormat": "YYYY-MM-DD HH:mm:ss",
     "verbose": true,
-    "noColors": true
-}  
+    "noColors": true,
+    "watch": ["src"],
+    "ext": "js,json,env",
+    "delay": "1000"
+}
