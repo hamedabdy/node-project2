@@ -12,15 +12,16 @@ const bodyParser = require("body-parser");
 const {
   notFoundHandler,
   errorHandler,
-} = require("./src/middleware/errorMiddleware");
-const routes = require("./src/routes/index");
+} = require("./middleware/errorMiddleware");
+const routes = require("./routes/index");
 
 // Enable debug logging for Express.js
 // debug("express:router");
 // debug("express:application");
 
 const app = express();
-const port = process.env.NODE_PORT || 3001;
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
 
 // Use Morgan middleware for logging HTTP requests
 app.use(morgan("dev"));
@@ -32,6 +33,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Routes
+app.get('/ping', (req, res) => {
+  res.json({ status: 'pong', timestamp: new Date().toISOString() });
+});
+
 app.use("/api", routes);
 
 // Handle 404 errors
@@ -40,6 +45,6 @@ app.use(notFoundHandler);
 // Handle other errors
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
 });

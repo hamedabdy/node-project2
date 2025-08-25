@@ -1,15 +1,16 @@
 {
-  "name": "MyITSMApp",
+  "name": "my-itsm-app",
   "version": "0.0.1",
   "description": "",
+  "author": "freeze2ice@gmail.com",
+  "license": "ISC",
+  "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon --delay 500ms server.js",
     "client": "cd ../my-react-app && npm start"
   },
-  "author": ":HamedAbdy",
-  "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.2",
     "chalk": "^4.1.2",
