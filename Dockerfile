@@ -8,25 +8,25 @@ ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache bash git
 
 # Create non-root user 'app'
-RUN addgroup app && adduser -S -G app app
+# RUN addgroup app && adduser -S -G app app
 
 # Set the working directory to /app
 WORKDIR /app
 
 # Copy package.json and package-lock.json first
-COPY ./package*.json ./
+COPY --chown=node:node ./package*.json ./
 
 # Ensure app directory is owned by the non-root user
-RUN chown -R app:app /app
+RUN chown -R node:node /app
 
 # Switch to non-root user to install dependencies
-USER app
+USER node
 
 # Install dependencies
 RUN npm install
 
-COPY ./src ./src
-COPY ./nodemon.json ./
+COPY --chown=node:node ./src ./src
+COPY --chown=node:node ./nodemon.json ./
 
 # Expose port
 EXPOSE 3000
