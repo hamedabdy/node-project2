@@ -6,7 +6,7 @@ const sequelizer = new Sequelizer();
 
 const utils = require("../utils/utils"); // Load utilies
 
-const dbBackup = require("../services/DbBackup");
+// const dbBackup = require("../services/DbBackup");
 
 /*
  * SEQUELIZE ROUTES
