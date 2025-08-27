@@ -22,19 +22,33 @@ module.exports = (sequelize, parent, sysDictionary) => {
       super_class: DataTypes.STRING(32),
     };
 
+    // Helper method to format table name for display
+    static formatDisplayName(name) {
+      return name
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+
     // Overload the `create` method
     static async create(data, options) {
       data.sys_class_name = this.table_name;
-      data.sys_name = data.label;
+      data.sys_name = this.formatDisplayName(data.name);
       let record = {};
 
       // Create record if table name not nil
       if (!utils.nil(data.name)) {
         // Call the default `create` method using `super.create`
         record = await super.create(data, options);
-        this.createTableIfNotExists(data);
-        parent.create(data, options);
-        sysDictionary.createCollection(data, options);
+        await this.createTableIfNotExists(data);
+        await parent.create(data, options);
+        
+        // If super_class is specified, copy fields from parent table first
+        if (!utils.nil(data.super_class)) {
+          await sysDictionary._copyParentFields(data.name, data.super_class);
+        }
+        
+        await sysDictionary.createCollection(data, options);
       }
 
       return new Promise((resolve, reject) => {
@@ -57,21 +71,29 @@ module.exports = (sequelize, parent, sysDictionary) => {
       // Delete record if table name not nil
       if (!utils.nil(name)) {
         try {
-          // Call the default `destroy` method
-          await super
-            .destroy(data, options)
-            .then((result) => {
-              console.log("SysDbObject - Records deleted : %s", result);
-            })
-            .catch((e) => {
-              console.log("SysDbObject - error : %s", e);
-            });
-          // must first delete related records
+          // Get the record first to access its sys_id
+          const record = await super.findOne({ where: { name } });
+          if (!record) {
+            console.log("SysDbObject - No record found with name:", name);
+            return;
+          }
+
+          // Delete related records in sys_dictionary first (collection and its fields)
           await sysDictionary.deleteCollection(data, options);
-          await parent.deleteRow(data, options);
+
+          // Delete the corresponding record in sys_metadata with the same sys_id
+          await parent.deleteRow({ where: { sys_id: record.sys_id } }, options);
+
+          // Delete the record in sys_db_object
+          await super.destroy(data, options);
+
+          // Finally, drop the actual database table
           await this.dropTableIfExists(name);
+
+          console.log("SysDbObject - Successfully deleted record and all related data for:", name);
         } catch (e) {
-          console.log("SysDbObject - error : %s", e);
+          console.error("SysDbObject - Cascade delete error:", e);
+          throw e; // Rethrow the error to be handled by the caller
         }
       }
 
@@ -91,7 +113,7 @@ module.exports = (sequelize, parent, sysDictionary) => {
         await queryInterface.describeTable(name);
         utils.warn("tablename %s already exists !", name);
         return {
-          status: "success",
+          status: "error",
           message: `Table "${name}" already exists !`,
         };
       } catch (e) {

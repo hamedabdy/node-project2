@@ -1,5 +1,5 @@
 // Import Sequelize and Model
-const { DataTypes, Model } = require("sequelize");
+const { DataTypes, Model, Op } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
@@ -12,6 +12,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
   //   const sysMetadata = SysMetaData(sequelize);
   // const sysGlideObject = SysGlideObject(sequelize, parent);
 
+  
   class SysDictionary extends Model {
     static table_name = "sys_dictionary";
     static attr = {
@@ -22,9 +23,9 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       // },
       element: DataTypes.STRING(80),
       // sys_name: {
-      //   ...parent.attr.sys_name,
-      //   defaultValue: this.element,
-      // },
+        //   ...parent.attr.sys_name,
+        //   defaultValue: this.element,
+        // },
       column_label: DataTypes.STRING(80),
       internal_type: DataTypes.STRING(32),
       name: DataTypes.STRING(80),
@@ -37,6 +38,8 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       mandatory: DataTypes.BOOLEAN,
       unique: DataTypes.BOOLEAN,
     };
+        
+    static INTERNAL_COLLECION_TYPE = "collection";
 
     /**
      *
@@ -65,17 +68,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           allowNull: mandatory ? false : true, // if manadatory set to false !
         })
         .then(() => {
-          console.log(
-            "SysDictionary - createColumn - New column added : %s",
-            element
-          );
+          console.log("SysDictionary - createColumn - New column added: ", element);
           return { status: "success" };
         })
         .catch((error) => {
-          console.log(
-            "SysDictionary - createColumn - An error occurred: ",
-            error
-          );
+          console.log("SysDictionary - createColumn - An error occurred: ", error);
           return { status: "fail" };
         });
     }
@@ -106,17 +103,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
             : utils.bool(default_value),
         })
         .then(() => {
-          console.log(
-            "SysDictionary - updateColumn - New column added : %s",
-            element
-          );
+          console.log("SysDictionary - updateColumn - New column added: ", element);
           return { status: "success" };
         })
         .catch((error) => {
-          console.log(
-            "SysDictionary - updateColumn - An error occurred: ",
-            error
-          );
+          console.log("SysDictionary - updateColumn - An error occurred: ", error);
           return { status: "fail" };
         });
     }
@@ -132,28 +123,13 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         .getQueryInterface()
         .removeColumn(tableName, columnName)
         .then((result) => {
-          console.log(
-            "SysDictionary - removeColumn - Column deleted : ",
-            result
-          );
-          return {
-            table: tableName,
-            column: columnName,
-            status: "success",
-            err: "",
-          };
+          console.log("SysDictionary - removeColumn - Column deleted : ", result);
+          return {table: tableName, column: columnName, status: "success", err: "", };
         })
         .catch((e) => {
           console.error(
-            "SysDictionary - removeColumn - Remove Column error : ",
-            e
-          );
-          return {
-            table: tableName,
-            column: columnName,
-            status: "fail",
-            err: e,
-          };
+            "SysDictionary - removeColumn - Remove Column error : ", e);
+          return {table: tableName, column: columnName, status: "fail", err: e, };
         });
     }
 
@@ -183,10 +159,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       if (utils.bool(options.no_count)) {
         return await this.findAll(options)
           .then((records) => {
-            return {
-              rows: records,
-              count: records.length,
-            };
+            return {rows: records, count: records.length};
           })
           .catch((e) => {
             console.error("SysDictionary - getRows - Error : ", e);
@@ -206,7 +179,6 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     // TODO : Methods : delete row, MultipleDelete rows
 
     static async getAttribs(tableName, no_count) {
-      // utils.warn("SysDictionary - getAttribs for table : %s", tableName);
       // TODO add condition on type == collection
       return await this.getRows({
         where: { name: tableName },
@@ -221,16 +193,16 @@ module.exports = (sequelize, parent, sysGlideObject) => {
 
     // overload the `create` method
     static async create(data, options) {
-      console.log("sys_dictionary - create - data : %o", data);
-
-      data.sys_name = data.element;
+      // Only set sys_name if it hasn't been set already (for non-collection records)
+      if (data.internal_type != this.INTERNAL_COLLECION_TYPE)
+        data.sys_name = data.element;
       data.sys_class_name = this.table_name;
 
       // Insert the new row in table
       const record = await super.create(data, options);
 
       // ignore if type is collection
-      if (data.internal_type != "collection") this._createColumn(data);
+      if (data.internal_type != this.INTERNAL_COLLECION_TYPE) this._createColumn(data);
 
       parent.create(data, options); // Create a new record in sys_metadata
 
@@ -240,29 +212,29 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           reject({
             sys_id: "",
             status: "fail",
-            err: "SysDictionary - Create - Insert row error",
+            err: "SysDictionary[create] - Insert row error",
           });
       });
     }
 
     // overload the `destroy` method
     static async destroy(data, options) {
-      console.log("sys_dictionary - destroy - data : %o", data);
+      // console.log("sys_dictionary - destroy - data : %o", data);
 
       const record = await super
         .destroy({ where: { sys_id: data.where.sys_id } }, options)
         .then((result) => {
-          console.log("SysDictionary - Records deleted : %s", result);
+          // console.log("SysDictionary - Records deleted : %s", result);
           return { sys_id: data.where.sys_id, status: "success" };
         })
         .catch((e) => {
-          console.log("SysDictionary - error : %s", e);
+          console.error("SysDictionary[Destroy] - error : %s", e);
           return { sys_id: "", status: "fail", err: e };
         });
     }
 
     async updateRow(data) {
-      log(warning("sysDictionary - inside update row :  %o"), data);
+      // log(warning("sysDictionary - inside update row :  %o"), data);
       const instance = await this.findByPk(data.sys_id);
       if (!instance)
         return { sys_id: "", status: "fail", err: "Record not found" };
@@ -282,7 +254,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           return { sys_id: data.sys_id, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error("[sysDictionary]Update row error : ", e);
+          console.error("SysDictionary[updateRow] error : ", e);
           return { sys_id: sys_id, status: "fail", err: e };
         });
     }
@@ -291,36 +263,91 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       // unique 32-character sys_id
       // To prevent duplicate sys_id need a new sys_id for the collection record for each table creation.
       data.sys_id = utils.generateSysID();
-      data.internal_type = "collection";
+      data.internal_type = this.INTERNAL_COLLECION_TYPE;
       data.sys_update_name = `${this.table_name}_${data.name}`;
       data.sys_name = data.name;
 
-      this.create(data, options);
-
-      // Copy all fields from the super_class table to the new collection table
-      this._copyParentFields(data.name,data.super_class);
+      // Only create the collection record, parent fields are copied by SysDbObject.create
+      return await this.create(data, options);
     }
 
     static async deleteCollection(data, options) {
-      data.internal_type = "collection";
       try {
-        // Get the collection record and all table fields
-        await super.findOne({
-            where: { name: data.where.name, internal_type: data.internal_type },
-          })
-          .then(async (collection) => {
-            data.where = collection.dataValues;
-            if (utils.nil(collection)) {
-              console.log("sysDictionary - deleteCollection - No collection found");
-              return;
+        const tableName = data.where.name;
+        // console.log("sysDictionary - Starting deletion for table:", tableName);
+
+        // Find all dictionary records for this table (collection and fields)
+        const allRecords = await super.findAll({
+          where: {
+            name: tableName
+          }
+        });
+
+        if (!allRecords || allRecords.length === 0) {
+          console.log("sysDictionary - deleteCollection - No records found for:", tableName);
+          return;
+        }
+
+        // Get the collection record
+        const collection = allRecords.find(record => record.internal_type === 'collection');
+        if (!collection) {
+          console.log("sysDictionary - deleteCollection - No collection record found for:", tableName);
+          return;
+        }
+
+        console.log("sysDictionary - Found records to delete:", {
+          total: allRecords.length,
+          collection: collection.sys_id,
+          fields: allRecords.length - 1
+        });
+
+        // Get all sys_ids to delete from sys_metadata
+        const sysIdsToDelete = allRecords.map(record => record.sys_id);
+        // console.log("sysDictionary - Deleting sys_metadata records for sys_ids:", sysIdsToDelete);
+
+        try {
+          // Delete corresponding records in sys_metadata first
+          const deletedMetadata = await parent.destroy({
+            where: {
+              sys_id: { [Op.in]: sysIdsToDelete }
             }
-             // Delete all related records (fields) with the same name as the collection
-            await super.destroy({ where: { name: data.where.name } }, options);
-            // Delete the collection record itself
-            return this.destroy(data, options);
-          });
+          }, options);
+          console.log(`sysDictionary - Deleted ${deletedMetadata} records in sys_metadata`);
+        } catch (error) {
+          console.error("sysDictionary - Error deleting sys_metadata records:", error);
+          throw error;
+        }
+
+        // Delete all field records for this table
+        try {
+          const deletedFields = await super.destroy({
+            where: {
+              name: tableName,
+              sys_id: { [Op.ne]: collection.sys_id } // Exclude the collection record itself
+            }
+          }, options);
+          console.log(`sysDictionary - Deleted ${deletedFields} field records for table:`, tableName);
+        } catch (error) {
+          console.error("sysDictionary - Error deleting field records:", error);
+          throw error;
+        }
+
+        // Delete the collection record itself
+        try {
+          await super.destroy({
+            where: {
+              sys_id: collection.sys_id
+            }
+          }, options);
+          console.log("sysDictionary - Deleted collection record for:", tableName);
+        } catch (error) {
+          console.error("sysDictionary - Error deleting collection record:", error);
+          throw error;
+        }
+
       } catch (e) {
-        console.error("sysDictionary - deleteCollection - error : %s", e);
+        console.error("sysDictionary - deleteCollection - error:", e);
+        throw e; // Rethrow the error to be handled by the caller
       }
     }
 
@@ -331,8 +358,20 @@ module.exports = (sequelize, parent, sysGlideObject) => {
      * @returns {Promise<Array>} - Array of created records.
      */
     static async _copyParentFields(tableName, superClassName) {
-      // Find all fields for the super_class table
-      const parentFields = await this.findAll({ where: { name: superClassName } });
+      if (!tableName || !superClassName) {
+        console.warn('_copyParentFields: Missing tableName or superClassName');
+        return [];
+      }
+      // Find all non-base-system fields for the super_class table
+      const parentFields = await this.findAll({
+        where: {
+          name: superClassName,
+          internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE },
+          element: {
+            [Op.notLike]: 'sys_%'  // Exclude system fields
+          }
+        }
+      });
       if (!parentFields || parentFields.length === 0) return [];
 
       // Attributes to exclude from copying
@@ -377,47 +416,29 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     hooks: {
       beforeCreate: (SysDictionaryModel, options) => {
         // Do something before creating a new SysDictionary instance
-        console.log(
-          "\n\n[%s] BEFORE CREATE HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] BEFORE CREATE HOOK \n\n", SysDictionary.table_name);
       },
       afterCreate: (SysDictionaryModel, options) => {
         // Do something after creating a new SysDictionary instance
-        console.log(
-          "\n\n[%s] AFTER CREATE HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] AFTER CREATE HOOK \n\n", SysDictionary.table_name);
         // Create an application file (sys_metadata)
       },
       beforeUpdate: (SysDictionaryModel, options) => {
         // Do something before updating a SysDictionary instance
-        console.log(
-          "\n\n[%s] BEFORE UPDATE HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] BEFORE UPDATE HOOK \n\n", SysDictionary.table_name);
       },
       afterUpdate: (SysDictionaryModel, options) => {
         // Do something after updating a SysDictionary instance
-        console.log(
-          "\n\n[%s] AFTER UPDATE HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] AFTER UPDATE HOOK \n\n", SysDictionary.table_name);
         // TODO : Update column length or type
       },
       beforeBulkDestroy: (SysDictionaryModel) => {
         // Do something before destroying a SysDictionary instance
-        console.log(
-          "\n\n[%s] BEFORE BULK DESTROY HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] BEFORE BULK DESTROY HOOK \n\n", SysDictionary.table_name);
       },
       afterBulkDestroy: (options) => {
         // Do something after destroying a SysDictionary instance
-        console.log(
-          "\n\n[%s] AFTER BULK DESTROY HOOK \n\n",
-          SysDictionary.table_name
-        );
+        console.log("\n\n[%s] AFTER BULK DESTROY HOOK \n\n", SysDictionary.table_name);
       },
     },
   });
