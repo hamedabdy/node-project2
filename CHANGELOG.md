@@ -4,6 +4,18 @@ All notable changes to the core-server project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Enhanced sys_name field handling in Sequelizer.js:
+  - sys_name now automatically uses the value of the field marked as display=true in sys_dictionary
+  - Falls back to the name field if no display field is configured
+  - Improves data consistency and user experience by using meaningful display values
+
+### Added
+- Added automatic sys_class_name defaulting in Sequelizer.js:
+  - sys_class_name is now automatically set to the table name during record insertion
+  - Improves data consistency and reduces manual input requirements
+  - Applied in insertRow method of Sequelizer service
+
 ### Fixed
 - Fixed duplicate column creation issue in SysDictionary:
   - Modified _copyParentFields to exclude system fields (sys_*) during inheritance

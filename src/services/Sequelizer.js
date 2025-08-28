@@ -202,9 +202,19 @@ class Sequelizer {
     req.body.sys_updated_on = req.body.sys_created_on =
       this.sequelize.fn("NOW");
 
-    req.body.sys_name = req.body.name;
+    // Find the display field from sys_dictionary
+    const displayField = await this.sysDictionary.findOne({
+      where: {
+        name: table_name,
+        display: true
+      }
+    });
+
+    // Set sys_name based on display field if available, otherwise fallback to name field
+    req.body.sys_name = displayField ? req.body[displayField.element] : req.body.name;
     req.body.sys_mod_count = "0";
     req.body.sys_update_name = `${table_name}_${req.body.sys_id}`;
+    req.body.sys_class_name = table_name; // Set sys_class_name to table name by default
 
     // Get speccific or generic Model
     const Model = await this.getTableMapping(table_name);
@@ -215,7 +225,7 @@ class Sequelizer {
         if (!utils.nil(result))
           return { sys_id: result.dataValues.sys_id, status: "success" };
 
-        console.log("SEQUELIZER - Insert row error, result : ", result);
+        console.error("SEQUELIZER - Insert row error, result : ", result);
       })
       .catch((e) => {
         console.error("SEQUELIZER - Insert row error : ", e);
@@ -284,11 +294,7 @@ class Sequelizer {
         });
         Model.addHook("afterCreate", (model, options) => {
           // TODO : add after business rules
-          log(
-            warning("Running afterCreate hook for table : %s, %o"),
-            model.get("sys_class_name"),
-            options
-          );
+          log(warning("Running afterCreate hook for table : %s, %o"), model.get("sys_class_name"), options);
           switch (model.get("sys_class_name")) {
             case "sys_dictionary":
               this.sysDictionary.create(
@@ -310,35 +316,21 @@ class Sequelizer {
         log(warning("inside addhooks : %s"), Model.getTableName());
         Model.addHook("beforeUpdate", (model, options) => {
           // TODO : add before business rules
-          log(
-            warning("Running beforeupdate hook for table : %s, %o"),
-            Model.getTableName(),
-            options
-          );
+          log(warning("Running beforeupdate hook for table : %s, %o"), Model.getTableName(), options);
         });
         Model.addHook("afterUpdate", (model, options) => {
           // TODO : add after business rules
-          log(
-            warning("Running afterupdate hook for table : %s"),
-            model.get("sys_class_name")
-          );
+          log(warning("Running afterupdate hook for table : %s"), model.get("sys_class_name"));
         });
         break;
       case "delete":
         Model.addHook("beforeDestroy", (model, options) => {
           // TODO : add before business rules
-          log(
-            warning("Running beforeDestroy hook for table : %s"),
-            model.get("sys_class_name")
-          );
+          log(warning("Running beforeDestroy hook for table : %s"), model.get("sys_class_name"));
         });
         Model.addHook("afterDestroy", (model, options) => {
           // TODO : add after business rules
-          log(
-            warning("Running afterDestroy hook for table : %o, %o"),
-            model,
-            options
-          );
+          log(warning("Running afterDestroy hook for table : %o, %o"), model, options);
         });
         break;
       case "bulkDelete":
@@ -349,12 +341,9 @@ class Sequelizer {
         Model.addHook("afterBulkDestroy", async (model, options) => {
           const record = records.pop();
           // TODO : add after business rules
-          log(
-            warning("Running afterBulkDestroy hook for table : %s"),
-            record.sys_class_name
-          );
+          log(warning("Running afterBulkDestroy hook for table : %s"), record.sys_class_name);
           if (record.sys_class_name === "sys_dictionary")
-            this.removeColumn(record.sys_class_name, record.name);
+            this.removeColumn(record.sys_class_name, record.name); // CHECK THIS TO SEE IF IT IS DUPLICATE WITH SYS_DB_OBJECT
         });
         break;
       default:
