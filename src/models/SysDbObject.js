@@ -105,7 +105,7 @@ module.exports = (sequelize, parent, sysDictionary) => {
      */
     static async createTableIfNotExists(SysDbObjectModel) {
       const { name, super_class } = SysDbObjectModel;
-      const p = utils.nil(parent) ? SysDbObjectModel : parent;
+      const model = utils.nil(parent) ? SysDbObjectModel : parent;
 
       const queryInterface = sequelize.getQueryInterface();
       try {
@@ -117,7 +117,9 @@ module.exports = (sequelize, parent, sysDictionary) => {
           message: `Table "${name}" already exists !`,
         };
       } catch (e) {
-        await queryInterface.createTable(name, p.getAttributes());
+        // TO DO : every table is getting the full set of sys_* fields created from sys_db_object model. Optiomize this.
+        // mainly sys_id, sys_created_on, sys_created_by, sys_updated_on, sys_updated_by, sys_class_name are needed
+        await queryInterface.createTable(name, model.getAttributes());
         return { status: "success", message: `New table "${name}" created !` };
       }
     }

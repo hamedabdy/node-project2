@@ -179,9 +179,8 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     // TODO : Methods : delete row, MultipleDelete rows
 
     static async getAttribs(tableName, no_count) {
-      // TODO add condition on type == collection
       return await this.getRows({
-        where: { name: tableName },
+        where: { name: tableName, internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE } },
         no_count: utils.bool(no_count),
       }).then((records) => {
         return {

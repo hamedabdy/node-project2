@@ -4,6 +4,12 @@ All notable changes to the core-server project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Enhanced sys_dictionary table query handling in Sequelizer.js:
+  - Added automatic filtering to exclude collection type records
+  - Improved data consistency in frontend views
+  - Utilized SysDictionary's getRows method for better query handling
+
 ### Added
 - Enhanced sys_name field handling in Sequelizer.js:
   - sys_name now automatically uses the value of the field marked as display=true in sys_dictionary

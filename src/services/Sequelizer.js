@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes } = require("sequelize");
+const { Sequelize, DataTypes, Op } = require("sequelize");
 
 const { dbConfig } = require("../config/database");
 const utils = new (require("../utils/utils"))(); // Load utilies
@@ -31,16 +31,8 @@ class Sequelizer {
     this.sequelize = sequelize;
     this.sysMetaData = SysMetaData(this.sequelize);
     this.sysGlideObject = SysGlideObject(this.sequelize, this.sysMetaData);
-    this.sysDictionary = SysDictionary(
-      this.sequelize,
-      this.sysMetaData,
-      this.sysGlideObject
-    );
-    this.sysDbObject = SysDbObject(
-      this.sequelize,
-      this.sysMetaData,
-      this.sysDictionary
-    );
+    this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData, this.sysGlideObject);
+    this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData, this.sysDictionary);
     this.sequelize.sync({ alter: true, force: false });
     // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables.
     // force : true => Drops everything and recreates everything.
@@ -95,11 +87,7 @@ class Sequelizer {
     return await this.sequelize.queryInterface
       .describeTable(table_name)
       .then((tableDefinition) => {
-        return {
-          table: table_name,
-          data: tableDefinition,
-          status: "success",
-        };
+        return {table: table_name, data: tableDefinition, status: "success"};
       })
       .catch((e) => {
         console.error("Get columns error : ", e);
@@ -111,11 +99,7 @@ class Sequelizer {
     return await this.sysDictionary
       .getAttribs(table_name)
       .then((rows) => {
-        return {
-          table: table_name,
-          data: rows,
-          status: "success",
-        };
+        return {table: table_name, data: rows, status: "success"};
       })
       .catch((e) => {
         console.error("Get columns error : ", e);
@@ -129,10 +113,9 @@ class Sequelizer {
   async getRows(req) {
     const { table_name } = req.params;
     const { sys_id, sysparm_query, sysparm_limit, sysparm_fields } = req.query;
-    const { data } = await this.getColumns(table_name);
-
-    // Define the model for the table
-    const Model = this.sequelize.define(table_name, data);
+    
+    // Get the appropriate model
+    const Model = await this.getTableMapping(table_name);
 
     if (!sys_id) {
       let query = {};
@@ -145,10 +128,12 @@ class Sequelizer {
 
         console.log("Filtered Query: %o", query);
       }
+
       // If sysparm_fields is provided, use it as the attributes option
       if (sysparm_fields) {
         query.attributes = sysparm_fields.split(",").map(f => f.trim()).filter(Boolean);
       }
+
       return await Model.findAll(query)
         .then((result) => {
           return { data: result, status: "success" };
@@ -224,8 +209,6 @@ class Sequelizer {
       .then((result) => {
         if (!utils.nil(result))
           return { sys_id: result.dataValues.sys_id, status: "success" };
-
-        console.error("SEQUELIZER - Insert row error, result : ", result);
       })
       .catch((e) => {
         console.error("SEQUELIZER - Insert row error : ", e);
@@ -294,22 +277,18 @@ class Sequelizer {
         });
         Model.addHook("afterCreate", (model, options) => {
           // TODO : add after business rules
-          log(warning("Running afterCreate hook for table : %s, %o"), model.get("sys_class_name"), options);
-          switch (model.get("sys_class_name")) {
-            case "sys_dictionary":
-              this.sysDictionary.create(
-                model.get("table"),
-                model.get("name"),
-                model.get("length")
-              );
-              break;
+          // log(warning("Running afterCreate hook for table : %s, %o"), model.get("sys_class_name"), options);
+          // switch (model.get("sys_class_name")) {
+          //   case "sys_dictionary":
+          //     this.sysDictionary.create(model.get("table"), model.get("name"),model.get("length"));
+          //     break;
 
-            case "sys_db_object":
-              this.sysDbObject.createTableIfNotExists(model); //this.createTable(model.get("name"));
-              break;
-            default:
-              break;
-          }
+          //   case "sys_db_object":
+          //     this.sysDbObject.createTableIfNotExists(model); //this.createTable(model.get("name"));
+          //     break;
+          //   default:
+          //     break;
+          // }
         });
         break;
       case "update":
@@ -339,11 +318,11 @@ class Sequelizer {
           // log(warning("Running beforeBulkDestroy hook for table : %o"), model);
         });
         Model.addHook("afterBulkDestroy", async (model, options) => {
-          const record = records.pop();
           // TODO : add after business rules
           log(warning("Running afterBulkDestroy hook for table : %s"), record.sys_class_name);
-          if (record.sys_class_name === "sys_dictionary")
-            this.removeColumn(record.sys_class_name, record.name); // CHECK THIS TO SEE IF IT IS DUPLICATE WITH SYS_DB_OBJECT
+          // const record = records.pop();
+        //   if (record.sys_class_name === "sys_dictionary")
+        //     this.removeColumn(record.sys_class_name, record.name); // CHECK THIS TO SEE IF IT IS DUPLICATE WITH SYS_DB_OBJECT
         });
         break;
       default:
