@@ -3,7 +3,6 @@ const { DataTypes, Model, Op } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
-const { log, inspect } = require("util");
 const utils = new Utils();
 // const SysGlideObject = require("./SysGlideObject");
 // const SysMetaData = require("./SysMetaData");
@@ -47,16 +46,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
      * @returns Object {status : "success | fail"}
      */
     static async _createColumn(sysDictionary) {
-      const {
-        name,
-        element,
-        max_length,
-        internal_type,
-        default_value,
-        mandatory,
-      } = sysDictionary;
+      const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
 
-      const type = sysGlideObject.dataTypes[internal_type](max_length);
+      console.log("SysDictionary - _createColumn - Adding column : %s to table : %s - intenal type : %s - len : %s", element, name, internal_type, max_length);
+
+      const type = sysGlideObject.customDataTypes[internal_type](max_length);
       // Add a column to the table
       return sequelize
         .getQueryInterface()
@@ -85,13 +79,13 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     static async updateColumn(sysDictionary) {
       if (utils.nil(sysDictionary)) return;
 
-      const instance = await SysDictionary.findByPk(sysDictionary.sys_id);
+      const { sys_id, name, element, max_length, unique, default_value, internal_type } = sysDictionary;
+
+      const instance = await SysDictionary.findByPk(sys_id);
       if (!instance) return { status: "fail", err: "Record not found" };
 
-      const { name, element, max_length, unique, default_value } =
-        sysDictionary;
       const type =
-        sysGlideObject.dataTypes[sysDictionary.internal_type](max_length);
+        sysGlideObject.customDataTypes[internal_type](max_length);
 
       return sequelize
         .getQueryInterface()
@@ -196,6 +190,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       if (data.internal_type != this.INTERNAL_COLLECION_TYPE)
         data.sys_name = data.element;
       data.sys_class_name = this.table_name;
+      data.sys_update_name = `${this.table_name}_${data.name}_${data.element}`;
 
       // Insert the new row in table
       const record = await super.create(data, options);
