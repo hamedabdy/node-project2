@@ -3,10 +3,8 @@ const { DataTypes, Model } = require("sequelize");
 
 // IMPORT SysMetaData Model class
 const _dataTypes = require("./dataTypes");
-// const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent) => {
-  // const sysMetadata = SysMetaData(sequelize);
 
   class SysGlideObject extends Model {
     static table_name = "sys_glide_object";
@@ -20,7 +18,7 @@ module.exports = (sequelize, parent) => {
       label: DataTypes.STRING(80),
     };
 
-    static dataTypes = _dataTypes;
+    static customDataTypes = _dataTypes;
 
     // Initialize data to be inserted into the table
     // static initializationData = [
