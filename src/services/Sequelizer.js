@@ -147,6 +147,29 @@ class Sequelizer {
     if (sys_id) return this.findBySysId(Model, sys_id);
   }
 
+  /**
+   * Queries the database for a given table name and sys_id to return the sys_name value.
+   * @param {string} tableName The name of the table to query.
+   * @param {string} sys_id The sys_id of the record to retrieve.
+   * @returns {Promise<Object>} An object containing the sys_name value or an error.
+   */
+  async getSysNameBySysId(tableName, sys_id) {
+    try {
+      const Model = await this.getTableMapping(tableName);
+      const result = await Model.findByPk(sys_id, {
+        attributes: ['sys_name']
+      });
+      if (result) {
+        return { data: result.sys_name, status: "success" };
+      } else {
+        return { data: null, status: "fail", err: "Record not found" };
+      }
+    } catch (e) {
+      console.error(`[SEQUELIZER] Error getting sys_name for table ${tableName}, sys_id ${sys_id}: `, e);
+      return { data: null, status: "fail", err: e.message };
+    }
+  }
+
   async findBySysId(Model, sys_id) {
     return await Model.findByPk(sys_id)
       .then((result) => {

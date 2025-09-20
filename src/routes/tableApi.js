@@ -31,11 +31,11 @@ router.get("/table_info/:table_name", async (req, res) => {
 });
 
 // CREATE a TABLE ==> DO NOT USE. Use Create Record in sys_db_object
-router.get("/create_table", async (req, res) => {
-  const { name } = req.query;
-  const result = await sequelizer.createTable(name);
-  res.json(result);
-});
+// router.get("/create_table", async (req, res) => {
+//   const { name } = req.query;
+//   const result = await sequelizer.createTable(name);
+//   res.json(result);
+// });
 
 // DROP a TABLE ==> DO NOT USE. Use Delete Record in sys_db_object
 router.get("/drop_table", async (req, res) => {
@@ -76,6 +76,18 @@ router.get("/rows/:table_name", async (req, res) => {
   } catch (error) {
     console.error("GET ROWS : error: ", error);
     res.status(500).json({ error: "GET ROWS : Internal Server Error" });
+  }
+});
+
+// GET SYS_NAME by SYS_ID
+router.get("/sys_name/:table_name/:sys_id", async (req, res) => {
+  const { table_name, sys_id } = req.params;
+  try {
+    const result = await sequelizer.getSysNameBySysId(table_name, sys_id);
+    res.json(result);
+  } catch (error) {
+    console.error("GET SYS_NAME : error: ", error);
+    res.status(500).json({ error: "GET SYS_NAME : Internal Server Error" });
   }
 });
 
