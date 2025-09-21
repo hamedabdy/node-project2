@@ -5,10 +5,17 @@ All notable changes to the core-server project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Modified `SysDictionary.js` to retrieve `internal_type` name from `sys_glide_object` table:
+  - Implemented `getGlideObjectNameBySysId` in `SysGlideObject.js` to fetch the name attribute for a given sys_id.
+  - Updated `_createColumn` and `updateColumn` methods in `SysDictionary.js` to use this new function, mapping the `internal_type` sys_id to its corresponding name for custom types.
 - Enhanced sys_dictionary table query handling in Sequelizer.js:
   - Added automatic filtering to exclude collection type records
   - Improved data consistency in frontend views
   - Utilized SysDictionary's getRows method for better query handling
+
+### Added
+- Added `getReferenceKeyBySysId` function in `core-server/src/services/Sequelizer.js` to retrieve the display value for a reference key.
+- Added new API endpoint `/reference_key/:table_name/:sys_id` in `core-server/src/routes/tableApi.js` to expose the `getReferenceKeyBySysId` functionality.
 
 ### Added
 - Enhanced sys_name field handling in Sequelizer.js:

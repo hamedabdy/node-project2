@@ -27,14 +27,14 @@ const sequelize = new Sequelize(
 );
 
 class Sequelizer {
-  constructor(config) {
+  constructor() {
     this.sequelize = sequelize;
     this.sysMetaData = SysMetaData(this.sequelize);
     this.sysGlideObject = SysGlideObject(this.sequelize, this.sysMetaData);
     this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData, this.sysGlideObject);
     this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData, this.sysDictionary);
-    this.sequelize.sync({ alter: true, force: false });
-    // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables.
+    this.sequelize.sync({ alter: false, force: false });
+    // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables. It could drop new columns created outside of Sequelize Model (like manually in DBMS)
     // force : true => Drops everything and recreates everything.
   }
 
@@ -119,14 +119,12 @@ class Sequelizer {
 
     if (!sys_id) {
       let query = {};
-      if (!sysparm_query) {
-        console.log("No query parameters provided.");
-      } else {
+      if (sysparm_query) {
         const q = query_litteral.encodedQueryToSequelize(sysparm_query);
         query = { where: q };
         if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
 
-        console.log("Filtered Query: %o", query);
+        console.log("[Sequlizer :: getRows]  Filtered Query: %o", query);
       }
 
       // If sysparm_fields is provided, use it as the attributes option
@@ -153,10 +151,10 @@ class Sequelizer {
    * @param {string} sys_id The sys_id of the record to retrieve.
    * @returns {Promise<Object>} An object containing the sys_name value or an error.
    */
-  async getSysNameBySysId(tableName, sys_id) {
+  async getSysNameBySysId(tableName, value, reference_key) {
     try {
       const Model = await this.getTableMapping(tableName);
-      const result = await Model.findByPk(sys_id, {
+      const result = await Model.findOne({where: {[reference_key]: value}}, {
         attributes: ['sys_name']
       });
       if (result) {
@@ -165,7 +163,32 @@ class Sequelizer {
         return { data: null, status: "fail", err: "Record not found" };
       }
     } catch (e) {
-      console.error(`[SEQUELIZER] Error getting sys_name for table ${tableName}, sys_id ${sys_id}: `, e);
+      console.error(`[SEQUELIZER] Error getting sys_name for table ${tableName}, value ${value}: `, e);
+      return { data: null, status: "fail", err: e.message };
+    }
+  }
+
+  /**
+   * Queries the database for a given table name and sys_id to return the sys_name value.
+   * This function is intended to retrieve the display value for a reference key.
+   * @param {string} sys_id The sys_id of the record to retrieve.
+   * @returns {Promise<Object>} An object containing the sys_name value or an error.
+   */
+  async getReferenceKeyBySysId(sys_id) {
+    let ret = {data: null, status: "fail"};
+    try {
+      const Model = await this.getTableMapping("sys_dictionary");
+      const result = await Model.findByPk(sys_id, {
+        attributes: ['reference_key']
+      });
+      
+      if (result)
+        ret = { data: result.reference_key, status: "success" };
+
+      return ret;
+      
+    } catch (e) {
+      console.error(`[SEQUELIZER :: getReferenceKeyBySysId] Error getting reference key for table "sys_dictionary", sys_id ${sys_id}: `, e);
       return { data: null, status: "fail", err: e.message };
     }
   }

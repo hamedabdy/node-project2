@@ -9,6 +9,7 @@ const sequelizeDataTypes = {
   datetime: (max_length) => DataTypes.DATE(max_length),
   collection: DataTypes.STRING,
   reference: (max_length) => DataTypes.STRING(max_length),
+  table_name: (max_length) => DataTypes.STRING(max_length),
   choice: (max_length) => DataTypes.STRING(max_length),
 };
 

@@ -80,14 +80,27 @@ router.get("/rows/:table_name", async (req, res) => {
 });
 
 // GET SYS_NAME by SYS_ID
-router.get("/sys_name/:table_name/:sys_id", async (req, res) => {
-  const { table_name, sys_id } = req.params;
+router.get("/getSysName/:table_name", async (req, res) => {
+  const { table_name } = req.params;
+  const { value, reference_key } = req.query;
   try {
-    const result = await sequelizer.getSysNameBySysId(table_name, sys_id);
+    const result = await sequelizer.getSysNameBySysId(table_name, value, reference_key);
     res.json(result);
   } catch (error) {
     console.error("GET SYS_NAME : error: ", error);
     res.status(500).json({ error: "GET SYS_NAME : Internal Server Error" });
+  }
+});
+
+// GET REFERENCE KEY by SYS_ID
+router.get("/getReferenceKey/:sys_id", async (req, res) => {
+  const { sys_id } = req.params;
+  try {
+    const result = await sequelizer.getReferenceKeyBySysId(sys_id);
+    res.json(result);
+  } catch (error) {
+    console.error("GET REFERENCE KEY : error: ", error);
+    res.status(500).json({ error: "GET REFERENCE KEY : Internal Server Error" });
   }
 });
 

@@ -4,7 +4,7 @@ const { DataTypes, Model, Op } = require("sequelize");
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
 const utils = new Utils();
-// const SysGlideObject = require("./SysGlideObject");
+const SysGlideObject = require("./SysGlideObject");
 // const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent, sysGlideObject) => {
@@ -29,6 +29,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       internal_type: DataTypes.STRING(32),
       name: DataTypes.STRING(80),
       reference: DataTypes.STRING(32),
+      reference_key: DataTypes.STRING(40),
       default_value: DataTypes.STRING(80),
       max_length: DataTypes.INTEGER(6),
       attrributes: DataTypes.STRING(1000),
@@ -41,15 +42,12 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     static INTERNAL_COLLECION_TYPE = "collection";
 
     /**
-     *
+     * create a new column in the specified table in DB
      * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
     static async _createColumn(sysDictionary) {
       const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
-
-      console.log("SysDictionary - _createColumn - Adding column : %s to table : %s - intenal type : %s - len : %s", element, name, internal_type, max_length);
-
       const type = sysGlideObject.customDataTypes[internal_type](max_length);
       // Add a column to the table
       return sequelize
@@ -84,8 +82,9 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       const instance = await SysDictionary.findByPk(sys_id);
       if (!instance) return { status: "fail", err: "Record not found" };
 
-      const type =
-        sysGlideObject.customDataTypes[internal_type](max_length);
+      // Retrieve the actual type name from SysGlideObject using the internal_type sys_id
+      const internalTypeName = await SysGlideObject(sequelize, parent).getGlideObjectNameBySysId(internal_type);
+      const type = sysGlideObject.customDataTypes[internalTypeName](max_length);
 
       return sequelize
         .getQueryInterface()
@@ -187,10 +186,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     // overload the `create` method
     static async create(data, options) {
       // Only set sys_name if it hasn't been set already (for non-collection records)
-      if (data.internal_type != this.INTERNAL_COLLECION_TYPE)
+      if (data.internal_type != this.INTERNAL_COLLECION_TYPE){
         data.sys_name = data.element;
+        data.sys_update_name = `${this.table_name}_${data.name}_${data.element}`;
+      }
       data.sys_class_name = this.table_name;
-      data.sys_update_name = `${this.table_name}_${data.name}_${data.element}`;
 
       // Insert the new row in table
       const record = await super.create(data, options);
@@ -288,12 +288,6 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           console.log("sysDictionary - deleteCollection - No collection record found for:", tableName);
           return;
         }
-
-        console.log("sysDictionary - Found records to delete:", {
-          total: allRecords.length,
-          collection: collection.sys_id,
-          fields: allRecords.length - 1
-        });
 
         // Get all sys_ids to delete from sys_metadata
         const sysIdsToDelete = allRecords.map(record => record.sys_id);
