@@ -16,15 +16,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     static table_name = "sys_dictionary";
     static attr = {
       ...parent.attr,
-      // sys_class_name: {
-      //   ...parent.attr.sys_class_name,
-      //   defaultValue: this.table_name,
-      // },
       element: DataTypes.STRING(80),
-      // sys_name: {
-        //   ...parent.attr.sys_name,
-        //   defaultValue: this.element,
-        // },
       column_label: DataTypes.STRING(80),
       internal_type: DataTypes.STRING(32),
       name: DataTypes.STRING(80),
@@ -187,7 +179,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     static async create(data, options) {
       // Only set sys_name if it hasn't been set already (for non-collection records)
       if (data.internal_type != this.INTERNAL_COLLECION_TYPE){
-        data.sys_name = data.element;
+        data.sys_name = data.column_label;
         data.sys_update_name = `${this.table_name}_${data.name}_${data.element}`;
       }
       data.sys_class_name = this.table_name;
