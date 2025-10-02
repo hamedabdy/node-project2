@@ -20,26 +20,6 @@ module.exports = (sequelize, parent) => {
 
     static customDataTypes = _dataTypes;
 
-    // Initialize data to be inserted into the table
-    // static initializationData = [
-    //   {
-    //     name: "string",
-    //     label: "String",
-    //     sys_updated_by: "system",
-    //     sys_created_by: "system",
-    //     sys_updated_on: sequelize.fn("NOW"),
-    //     sys_created_on: sequelize.fn("NOW"),
-    //   },
-    //   {
-    //     name: "boolean",
-    //     label: "True/False",
-    //     sys_updated_by: "system",
-    //     sys_created_by: "system",
-    //     sys_updated_on: sequelize.fn("NOW"),
-    //     sys_created_on: sequelize.fn("NOW"),
-    //   },
-    // ];
-
     static async findBySysId(sysID) {
       return await SysGlideObject.findOne({ where: { sys_id: sysID } })
         .then((result) => {
@@ -99,15 +79,6 @@ module.exports = (sequelize, parent) => {
       },
     },
   });
-
-  // // Insert initialization data into the table
-  // SysGlideObject.bulkCreate(SysGlideObject.initializationData)
-  //   .then(() => {
-  //     console.log("Initialization data inserted successfully");
-  //   })
-  //   .catch((error) => {
-  //     console.error("Error inserting initialization data:", error);
-  //   });
 
   return SysGlideObject;
 };
