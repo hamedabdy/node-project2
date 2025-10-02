@@ -20,6 +20,11 @@ module.exports = (sequelize, parent) => {
 
     static customDataTypes = _dataTypes;
 
+    /**
+     * Retrieves a record for a given sys_id from the sys_glide_object table.
+     * @param {string} sysID - The sys_id of the record to look for.
+     * @returns {Promise<Array>} The record in JSON if found, otherwise empty array.
+     */
     static async findBySysId(sysID) {
       return await SysGlideObject.findOne({ where: { sys_id: sysID } })
         .then((result) => {
