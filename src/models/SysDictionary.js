@@ -5,12 +5,8 @@ const { DataTypes, Model, Op } = require("sequelize");
 const Utils = require("../utils/utils");
 const utils = new Utils();
 const SysGlideObject = require("./SysGlideObject");
-// const SysMetaData = require("./SysMetaData");
 
 module.exports = (sequelize, parent, sysGlideObject) => {
-  //   const sysMetadata = SysMetaData(sequelize);
-  // const sysGlideObject = SysGlideObject(sequelize, parent);
-
   
   class SysDictionary extends Model {
     static table_name = "sys_dictionary";
@@ -42,23 +38,28 @@ module.exports = (sequelize, parent, sysGlideObject) => {
       const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
       const type = sysGlideObject.customDataTypes[internal_type](max_length);
       // Add a column to the table
-      return sequelize
-        .getQueryInterface()
-        .addColumn(name, element, {
-          type: type,
-          defaultValue: utils.nil(default_value)
-            ? false
-            : utils.bool(default_value),
-          allowNull: mandatory ? false : true, // if manadatory set to false !
-        })
-        .then(() => {
-          console.log("SysDictionary - createColumn - New column added: ", element);
-          return { status: "success" };
-        })
-        .catch((error) => {
-          console.log("SysDictionary - createColumn - An error occurred: ", error);
-          return { status: "fail" };
-        });
+      try {
+        return sequelize
+          .getQueryInterface()
+          .addColumn(name, element, {
+            type: type,
+            defaultValue: utils.nil(default_value)
+              ? false
+              : utils.bool(default_value),
+            allowNull: mandatory ? false : true, // if manadatory set to false !
+          })
+          .then(() => {
+            console.log("[SysDictionary::_createColumn] New column added: ", element);
+            return { status: "success" };
+          })
+          .catch((error) => {
+            console.log("[SysDictionary::_createColumn] An error occurred: ", error);
+            return { status: "fail" };
+          });
+      } catch (error) {
+        console.log("[SysDictionary::_createColumn] Exception occurred: ", error);
+        return { status: "fail" };
+      }
     }
 
     /**
@@ -88,11 +89,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
             : utils.bool(default_value),
         })
         .then(() => {
-          console.log("SysDictionary - updateColumn - New column added: ", element);
+          console.log("[SysDictionary::updateColumn] New column added: ", element);
           return { status: "success" };
         })
         .catch((error) => {
-          console.log("SysDictionary - updateColumn - An error occurred: ", error);
+          console.log("[SysDictionary::updateColumn] An error occurred: ", error);
           return { status: "fail" };
         });
     }
@@ -108,12 +109,11 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         .getQueryInterface()
         .removeColumn(tableName, columnName)
         .then((result) => {
-          console.log("SysDictionary - removeColumn - Column deleted : ", result);
+          console.log("[SysDictionary::removeColumn] Column deleted : ", result);
           return {table: tableName, column: columnName, status: "success", err: "", };
         })
         .catch((e) => {
-          console.error(
-            "SysDictionary - removeColumn - Remove Column error : ", e);
+          console.error("[SysDictionary::removeColumn] Remove Column error : ", e);
           return {table: tableName, column: columnName, status: "fail", err: e, };
         });
     }
@@ -130,7 +130,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           return { data: r, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error("SysDictionary - findBySysId - Error : ", e);
+          console.error("[SysDictionary::findBySysId] Error : ", e);
           return { data: "", status: "fail", err: e };
         });
     }
@@ -147,7 +147,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
             return {rows: records, count: records.length};
           })
           .catch((e) => {
-            console.error("SysDictionary - getRows - Error : ", e);
+            console.error("[SysDictionary::getRows] Error : ", e);
             return e;
           });
       }
@@ -156,7 +156,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           return records;
         })
         .catch((e) => {
-          console.error("SysDictionary - getRows - Error : ", e);
+          console.error("[SysDictionary::getRows] Error : ", e);
           return e;
         });
     }
@@ -198,7 +198,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           reject({
             sys_id: "",
             status: "fail",
-            err: "SysDictionary[create] - Insert row error",
+            err: "[SysDictionary::create] Insert row error",
           });
       });
     }
@@ -214,7 +214,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           return { sys_id: data.where.sys_id, status: "success" };
         })
         .catch((e) => {
-          console.error("SysDictionary[Destroy] - error : %s", e);
+          console.error("[SysDictionary::destroy] error : %s", e);
           return { sys_id: "", status: "fail", err: e };
         });
     }
@@ -240,7 +240,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
           return { sys_id: data.sys_id, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error("SysDictionary[updateRow] error : ", e);
+          console.error("[SysDictionary::updateRow] error : ", e);
           return { sys_id: sys_id, status: "fail", err: e };
         });
     }
@@ -270,14 +270,14 @@ module.exports = (sequelize, parent, sysGlideObject) => {
         });
 
         if (!allRecords || allRecords.length === 0) {
-          console.log("sysDictionary - deleteCollection - No records found for:", tableName);
+          console.log("[SysDictionary::deleteCollection] No records found for:", tableName);
           return;
         }
 
         // Get the collection record
         const collection = allRecords.find(record => record.internal_type === 'collection');
         if (!collection) {
-          console.log("sysDictionary - deleteCollection - No collection record found for:", tableName);
+          console.log("[SysDictionary::deleteCollection] No collection record found for:", tableName);
           return;
         }
 
@@ -292,9 +292,9 @@ module.exports = (sequelize, parent, sysGlideObject) => {
               sys_id: { [Op.in]: sysIdsToDelete }
             }
           }, options);
-          console.log(`sysDictionary - Deleted ${deletedMetadata} records in sys_metadata`);
+          console.log(`[SysDictionary::deleteCollection] Deleted ${deletedMetadata} records in sys_metadata`);
         } catch (error) {
-          console.error("sysDictionary - Error deleting sys_metadata records:", error);
+          console.error("[SysDictionary::deleteCollection] Error deleting sys_metadata records:", error);
           throw error;
         }
 
@@ -306,9 +306,9 @@ module.exports = (sequelize, parent, sysGlideObject) => {
               sys_id: { [Op.ne]: collection.sys_id } // Exclude the collection record itself
             }
           }, options);
-          console.log(`sysDictionary - Deleted ${deletedFields} field records for table:`, tableName);
+          console.log(`[SysDictionary::deleteCollection] Deleted ${deletedFields} field records for table:`, tableName);
         } catch (error) {
-          console.error("sysDictionary - Error deleting field records:", error);
+          console.error("[SysDictionary::deleteCollection] Error deleting field records:", error);
           throw error;
         }
 
@@ -319,31 +319,28 @@ module.exports = (sequelize, parent, sysGlideObject) => {
               sys_id: collection.sys_id
             }
           }, options);
-          console.log("sysDictionary - Deleted collection record for:", tableName);
+          console.log("[SysDictionary::deleteCollection] Deleted collection record for:", tableName);
         } catch (error) {
-          console.error("sysDictionary - Error deleting collection record:", error);
+          console.error("[SysDictionary::deleteCollection] Error deleting collection record:", error);
           throw error;
         }
 
       } catch (e) {
-        console.error("sysDictionary - deleteCollection - error:", e);
+        console.error("[SysDictionary::deleteCollection] error:", e);
         throw e; // Rethrow the error to be handled by the caller
       }
     }
 
     /**
-     * Copy all fields from a super_class table to a new table in sys_dictionary.
-     * @param {string} tableName - The name of the new table.
+     * Get all non-internal collection and non-system fields for a given table name
      * @param {string} superClassName - The name of the super_class table.
-     * @returns {Promise<Array>} - Array of created records.
+     * @returns {Promise<Array>} - Array of matching records.
+     * @private
      */
-    static async _copyParentFields(tableName, superClassName) {
-      if (!tableName || !superClassName) {
-        console.warn('_copyParentFields: Missing tableName or superClassName');
-        return [];
-      }
-      // Find all non-base-system fields for the super_class table
-      const parentFields = await this.findAll({
+    static async _getSuperClassFields(superClassName) {
+      if (!superClassName) return [];
+      
+      return await this.findAll({
         where: {
           name: superClassName,
           internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE },
@@ -351,39 +348,69 @@ module.exports = (sequelize, parent, sysGlideObject) => {
             [Op.notLike]: 'sys_%'  // Exclude system fields
           }
         }
-      });
-      if (!parentFields || parentFields.length === 0) return [];
+      }) || [];
+    }
 
-      // Attributes to exclude from copying
-      const exclude = [
-        "sys_update_name",
+    /**
+     * Get all base system fields for a table
+     * @returns {Promise<Array>} - Array of records with base system fields
+     * @private
+     */
+    static async _getBaseSystemFields() {
+      const baseFields = [
         "sys_updated_by",
         "sys_updated_on",
         "sys_created_on",
         "sys_created_by",
         "sys_mod_count",
-        "sys_id",
+        "sys_id"
       ];
 
+      return await this.findAll({
+        where: {
+          element: {
+            [Op.in]: baseFields
+          }
+        },
+        group: ['element'], // Group by element to get unique records
+      }) || [];
+    }
+
+    /**
+     * Copy all fields from a super_class table to a new table in sys_dictionary.
+     * In abscence of super_class fields, copy base system fields instead.
+     * @param {string} tableName - The name of the new table.
+     * @param {string} superClassName - The name of the super_class table.
+     * @returns {Promise<Array>} - Array of created records.
+     */
+    static async _copyParentFields(tableName, superClassName) {
+      if (!tableName) {
+        console.error("[SysDictionary::_copyParentFields] Missing tableName");
+        return;
+      }
+
+      // Get all fields from parent
+      const parentFields = await this._getSuperClassFields(superClassName);
+      
+      // If no parent fields found, get base system fields instead
+      const fieldsToProcess = (parentFields && parentFields.length > 0) 
+        ? parentFields 
+        : await this._getBaseSystemFields();
+
       // Copy each field, changing the name to the new table
-      const created = [];
-      for (const field of parentFields) {
+      for (const field of fieldsToProcess) {
         const data = { ...field.dataValues };
-        // Remove excluded attributes
-        exclude.forEach((attr) => delete data[attr]);
         // Set the new table name
         data.name = tableName;
         // Generate a new sys_id for the new record
         data.sys_id = utils.generateSysID();
         // Set audit fields for the new record
         data.sys_created_on = data.sys_updated_on = this.sequelize.fn("NOW");
-        data.sys_created_by = data.sys_updated_by = "system";
+        data.sys_created_by = data.sys_updated_by = "system"; // must replace with current user
         data.sys_mod_count = 0; // Reset modification count
         data.update_name = `${this.table_name}_${data.name}_${data.element}`;
-        const record = await this.create(data);
-        created.push(record);
+        await this.create(data);
       }
-      return created;
     }
   }
 
