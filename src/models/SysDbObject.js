@@ -2,6 +2,7 @@
 const { DataTypes, Model } = require("sequelize");
 
 const Utils = require("../utils/utils");
+const BaseModel = require("./BaseModel")();
 const utils = new Utils();
 
 /**
@@ -13,18 +14,16 @@ module.exports = (sequelize, parent, sysDictionary) => {
     static table_name = "sys_db_object";
     static attr = {
       ...parent.attr,
-      // sys_class_name: {
-      //   ...parent.attr.sys_class_name,
-      //   defaultValue: this.table_name,
-      // },
       name: DataTypes.STRING(80),
       label: DataTypes.STRING(80),
       super_class: DataTypes.STRING(32),
     };
 
     // Helper method to format table name for display
-    static formatDisplayName(name) {
-      return name
+    static _formatDisplayName(name) {
+      // Remove 'u_' prefix if it exists
+      const cleanName = name.startsWith('u_') ? name.substring(2) : name;
+      return cleanName
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
@@ -33,33 +32,28 @@ module.exports = (sequelize, parent, sysDictionary) => {
     // Overload the `create` method
     static async create(data, options) {
       data.sys_class_name = this.table_name;
-      data.sys_name = this.formatDisplayName(data.name);
+      data.sys_name = this._formatDisplayName(data.name);
       let record = {};
 
       // Create record if table name not nil
       if (!utils.nil(data.name)) {
         // Call the default `create` method using `super.create`
         record = await super.create(data, options);
-        await this.createTableIfNotExists(data);
-        await parent.create(data, options);
-        
-        // If super_class is specified, copy fields from parent table first
-        if (!utils.nil(data.super_class)) {
-          await sysDictionary._copyParentFields(data.name, data.super_class);
-        }
-        
+        await this.createTableIfNotExists(data.name);
+        await parent.create(data, options); // create record in parent table (sys_metadata)
+
         await sysDictionary.createCollection(data, options);
+        
+        // If super_class is specified, copy fields from parent table otherwise, use base model fields
+        await sysDictionary._copyParentFields(data.name, data.super_class);
       }
 
       return new Promise((resolve, reject) => {
         if (!utils.nil(record)) {
-          console.log("SysDbObject - Record created : %o", record.dataValues);
-
+          console.log("[SysDbObject::create] Record created : %o", record.dataValues);
           resolve(record);
         } else {
-          reject(
-            "SysDbObject - Could not create table. Missing name attribute"
-          );
+          reject("[SysDbObject::create] Could not create table. Missing name attribute");
         }
       });
     }
@@ -101,12 +95,11 @@ module.exports = (sequelize, parent, sysDictionary) => {
     }
 
     /**
-     * @param {Model} SysDbObjectModel Model of the table to create
+     * Creates the actual database table if it does not already exist
+     * @param {Object} data Model of the table to create
+     * @returns {Promise<{status: string, message: string}>} Result of the table creation
      */
-    static async createTableIfNotExists(SysDbObjectModel) {
-      const { name, super_class } = SysDbObjectModel;
-      const model = utils.nil(parent) ? SysDbObjectModel : parent;
-
+    static async createTableIfNotExists(name) {
       const queryInterface = sequelize.getQueryInterface();
       try {
         // Check if the table exists
@@ -117,9 +110,7 @@ module.exports = (sequelize, parent, sysDictionary) => {
           message: `Table "${name}" already exists !`,
         };
       } catch (e) {
-        // TO DO : every table is getting the full set of sys_* fields created from sys_db_object model. Optiomize this.
-        // mainly sys_id, sys_created_on, sys_created_by, sys_updated_on, sys_updated_by, sys_class_name are needed
-        await queryInterface.createTable(name, model.getAttributes());
+        await queryInterface.createTable(name, BaseModel.getAttributes());
         return { status: "success", message: `New table "${name}" created !` };
       }
     }
@@ -128,24 +119,17 @@ module.exports = (sequelize, parent, sysDictionary) => {
      * @param {string} tableName name of the table to delete
      */
     static async dropTableIfExists(tableName) {
-      utils.warn("SYS_DB_OBJECT - dropTable - Deleting table : %s", tableName);
-
+      // utils.warn("SYS_DB_OBJECT - dropTable - Deleting table : %s", tableName);
       try {
         const queryInterface = sequelize.getQueryInterface();
         queryInterface
           .describeTable(tableName)
           .then((table) => {
             if (table) {
-              console.log(
-                "SYS_DB_OBJECT - dropTable - Deleting table : %s",
-                tableName
-              );
+              console.log("SYS_DB_OBJECT - dropTable - Deleting table : %s", tableName);
               queryInterface.dropTable(tableName);
             } else {
-              console.log(
-                "SYS_DB_OBJECT - dropTable - %s does not exist",
-                tableName
-              );
+              console.log("SYS_DB_OBJECT - dropTable - %s does not exist", tableName);
             }
           })
           .catch((error) => console.error(error));
@@ -153,8 +137,6 @@ module.exports = (sequelize, parent, sysDictionary) => {
         console.error("SYS_DB_OBJECT - dropTable - Error : %s", e);
       }
     }
-
-    // TODO : Methods : delete, MultipleDelet, findByID and findOne
   }
 
   // Initialize the SysGlideObject class by calling the init method
