@@ -1,6 +1,7 @@
 // Import Sequelize and Model
 const { Model, DataTypes } = require("sequelize");
 
+const BaseModel = require("./BaseModel")();
 const Utils = require("../utils/utils"); // Load utilies
 const utils = new Utils();
 
@@ -9,31 +10,12 @@ module.exports = (sequelize) => {
     static table_name = "sys_metadata";
 
     static attr = {
-      sys_id: {
-        type: DataTypes.STRING(32),
-        primaryKey: true,
-        unique: true,
-        allowNull: false,
-      },
-      sys_created_by: {
-        type: DataTypes.STRING(40),
-        allowNull: false,
-      },
-      sys_updated_by: {
-        type: DataTypes.STRING(40),
-        allowNull: false,
-      },
+      ...BaseModel.attr,
       sys_class_name: {
         type: DataTypes.STRING(80),
         allowNull: false,
-        // defaultValue: this.table_name, // no default value for parent table
       },
       sys_name: { type: DataTypes.STRING(255) },
-      sys_mod_count: {
-        type: DataTypes.STRING(6),
-        allowNull: false,
-        // defaultValue: "0",
-      },
       sys_scope: DataTypes.STRING(32),
       sys_update_name: DataTypes.STRING(255),
       sys_policy: DataTypes.STRING(40),
