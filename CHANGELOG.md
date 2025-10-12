@@ -4,6 +4,18 @@ All notable changes to the core-server project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Updated `_formatDisplayName` in `SysDbObject.js` to handle table names with 'u_' prefix by removing it before formatting the display name
+- Enhanced `_copyParentFields` in `SysDictionary.js` to create base system fields when no parent fields are found, ensuring basic system fields are always present in new tables
+- Fixed data type handling in `SysDictionary.js` to properly handle types that don't require max_length parameter
+- Updated `_getBaseSystemFields` in `SysDictionary.js` to ensure unique records are selected based on element attribute
+
+### Added
+- Added two new private functions in `SysDictionary.js`:
+  - `_getNonSystemFields`: Returns non-internal collection and non-system fields for a given table
+  - `_getBaseSystemFields`: Returns an array of records with base system fields
+- Refactored `_copyParentFields` in `SysDictionary.js` to use the new private functions for better code organization and maintainability
+
 ### Changed
 - Modified `SysDictionary.js` to retrieve `internal_type` name from `sys_glide_object` table:
   - Implemented `getGlideObjectNameBySysId` in `SysGlideObject.js` to fetch the name attribute for a given sys_id.

@@ -34,7 +34,7 @@ class Sequelizer {
     this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData, this.sysGlideObject);
     this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData, this.sysDictionary);
     this.sequelize.sync({ alter: false, force: false });
-    // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables. It could drop new columns created outside of Sequelize Model (like manually in DBMS)
+    // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables. It could drop new columns created outside of Sequelize Model (i.e. manually in DBMS)
     // force : true => Drops everything and recreates everything.
   }
 
