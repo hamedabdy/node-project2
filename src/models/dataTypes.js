@@ -1,16 +1,18 @@
 const { DataTypes } = require("sequelize");
 
 const sequelizeDataTypes = {
-  string: (max_length) => DataTypes.STRING(max_length),
-  integer: (max_length) => DataTypes.INTEGER(max_length),
-  decimal: (max_length) => DataTypes.DECIMAL(max_length),
-  boolean: DataTypes.BOOLEAN,
-  date: (max_length) => DataTypes.DATEONLY(max_length),
-  datetime: (max_length) => DataTypes.DATE(max_length),
-  collection: DataTypes.STRING,
-  reference: (max_length) => DataTypes.STRING(max_length),
-  table_name: (max_length) => DataTypes.STRING(max_length),
-  choice: (max_length) => DataTypes.STRING(max_length),
+  string: (max_length) => DataTypes.STRING(max_length || 40),
+  integer: () => DataTypes.INTEGER,
+  decimal: (max_length) => DataTypes.DECIMAL(max_length, 2),
+  boolean: () =>  DataTypes.BOOLEAN,
+  date: () =>  DataTypes.DATEONLY,
+  datetime: () =>  DataTypes.DATE,
+  GUID: () =>  DataTypes.UUID, // generic version (CHAR(36))
+  collection: (max_length) => DataTypes.STRING(max_length), // store as string (table name)
+  reference: () =>  DataTypes.STRING(32), // store as string (sys_id)
+  table_name: () =>  DataTypes.STRING(80),
+  choice: () => DataTypes.STRING(40),
+  html: (max_length) => DataTypes.STRING(max_length),
 };
 
 module.exports = sequelizeDataTypes;
