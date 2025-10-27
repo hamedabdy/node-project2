@@ -1,8 +1,9 @@
 const { Sequelize, DataTypes, Op } = require("sequelize");
-
 const { dbConfig } = require("../config/database");
 const utils = new (require("../utils/utils"))(); // Load utilies
-const query_litteral = new (require("../utils/QueryLitteral"))();
+const queryLitteral = new (require("../utils/QueryLitteral"))();
+const SchemaManager = require("./SchemaManager");
+const DotWalking = require("./DotWalking");
 
 // IMPORT MODELS
 const SysMetaData = require("../models/SysMetaData");
@@ -31,11 +32,19 @@ class Sequelizer {
     this.sequelize = sequelize;
     this.sysMetaData = SysMetaData(this.sequelize);
     this.sysGlideObject = SysGlideObject(this.sequelize, this.sysMetaData);
-    this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData, this.sysGlideObject);
-    this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData, this.sysDictionary);
+    this.sysDictionary = SysDictionary(this.sequelize, this.sysMetaData);
+    this.sysDbObject = SysDbObject(this.sequelize, this.sysMetaData);
+
+    // Dependecy registry
+    this.sysDbObject.sysDictionary = this.sysDictionary;
+    this.sysDictionary.sysGlideObject = this.sysGlideObject;
+    this.sysDictionary.sysDbObject = this.sysDbObject;
+
+
     this.sequelize.sync({ alter: false, force: false });
     // alter : true => Sequelize automatically updates the database schema to match the model definitions without dropping existing tables. It could drop new columns created outside of Sequelize Model (i.e. manually in DBMS)
     // force : true => Drops everything and recreates everything.
+    this.schemaManager = new SchemaManager(this.sequelize, this.sysDbObject);
   }
 
   async testConnection() {
@@ -95,15 +104,15 @@ class Sequelizer {
       });
   }
 
-  async getFields(table_name) {
+  async getFields(tableName) {
     return await this.sysDictionary
-      .getAttribs(table_name)
+      .getAttribs(tableName)
       .then((rows) => {
-        return {table: table_name, data: rows, status: "success"};
+        return {table: tableName, data: rows, status: "success"};
       })
       .catch((e) => {
-        console.error("Get columns error : ", e);
-        return { table: table_name, data: {}, status: "fail", err: e };
+        console.error("[Sequelizer::getFields] Get columns error : ", e);
+        return { table: tableName, status: "fail", err: e };
       });
   }
 
@@ -120,11 +129,11 @@ class Sequelizer {
     if (!sys_id) {
       let query = {};
       if (sysparm_query) {
-        const q = query_litteral.encodedQueryToSequelize(sysparm_query);
+        const q = queryLitteral.encodedQueryToSequelize(sysparm_query);
         query = { where: q };
         if (parseInt(sysparm_limit)) query.limit = parseInt(sysparm_limit);
 
-        console.log("[Sequlizer :: getRows]  Filtered Query: %o", query);
+        console.log("[Sequlizer::getRows] Filtered Query: %o", query);
       }
 
       // If sysparm_fields is provided, use it as the attributes option
@@ -137,7 +146,7 @@ class Sequelizer {
           return { data: result, status: "success" };
         })
         .catch((e) => {
-          console.error("Get rows error : ", e);
+          console.error("[Sequlizer::getRows] Get rows error : ", e);
           return { data: [], status: "fail", err: e };
         });
     }
@@ -188,7 +197,7 @@ class Sequelizer {
       return ret;
       
     } catch (e) {
-      console.error(`[SEQUELIZER :: getReferenceKeyBySysId] Error getting reference key for table "sys_dictionary", sys_id ${sys_id}: `, e);
+      console.error(`[SEQUELIZER::getReferenceKeyBySysId] Error getting reference key for table "sys_dictionary", sys_id ${sys_id}: `, e);
       return { data: null, status: "fail", err: e.message };
     }
   }
@@ -199,7 +208,7 @@ class Sequelizer {
         return { data: [result], status: "success", err: "" };
       })
       .catch((e) => {
-        console.error("Get rows error : ", e);
+        console.error("[SEQUELIZER::findBySysId] Get rows error : ", e);
         return { data: "", status: "fail", err: e };
       });
   }
@@ -257,7 +266,7 @@ class Sequelizer {
           return { sys_id: result.dataValues.sys_id, status: "success" };
       })
       .catch((e) => {
-        console.error("SEQUELIZER - Insert row error : ", e);
+        console.error("[SEQUELIZER::insertRow] Insert row error : ", e);
         return { sys_id: "", status: "fail", err: e };
       });
   }
@@ -287,7 +296,7 @@ class Sequelizer {
         return { sys_id: sys_id, status: "success" };
       })
       .catch((e) => {
-        console.error("Update row error : ", e);
+        console.error("[SEQUELIZER::updateRow] Update row error : ", e);
         return { sys_id: sys_id, status: "fail", err: e };
       });
   }
@@ -323,18 +332,6 @@ class Sequelizer {
         });
         Model.addHook("afterCreate", (model, options) => {
           // TODO : add after business rules
-          // log(warning("Running afterCreate hook for table : %s, %o"), model.get("sys_class_name"), options);
-          // switch (model.get("sys_class_name")) {
-          //   case "sys_dictionary":
-          //     this.sysDictionary.create(model.get("table"), model.get("name"),model.get("length"));
-          //     break;
-
-          //   case "sys_db_object":
-          //     this.sysDbObject.createTableIfNotExists(model); //this.createTable(model.get("name"));
-          //     break;
-          //   default:
-          //     break;
-          // }
         });
         break;
       case "update":
@@ -376,17 +373,17 @@ class Sequelizer {
     }
   }
 
-  async getTableMapping(table_name) {
+  async getTableMapping(tableName) {
     const table_map = {
       sys_db_object: this.sysDbObject,
       sys_dictionary: this.sysDictionary,
     };
 
-    let Model = table_map[table_name];
+    let Model = table_map[tableName];
     if (!Model) {
       // Dynamically define the model if it doesn't exist in the table_map
-      const { data } = await this.getColumns(table_name);
-      Model = this.sequelize.define(table_name, data);
+      const { data } = await this.getColumns(tableName);
+      Model = this.sequelize.define(tableName, data);
     }
 
     return Model;

@@ -6,6 +6,7 @@ const { DataTypes, Model } = require("sequelize");
  * Defines the base attributes that all tables will inherit
  */
 module.exports = () => {
+  
   class BaseModel extends Model {
     // Define base attributes that all models will inherit
     static attr = {

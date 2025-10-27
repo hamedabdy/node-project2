@@ -2,14 +2,15 @@
 const { DataTypes, Model } = require("sequelize");
 
 const Utils = require("../utils/utils");
-const BaseModel = require("./BaseModel")();
 const utils = new Utils();
+const BaseModel = require("./BaseModel")();
 
 /**
  * @param {object} sequelize : DB connection
  * @param {object} parent : parent class model (ex: SysMetaData)
  */
-module.exports = (sequelize, parent, sysDictionary) => {
+module.exports = (sequelize, parent) => {
+  
   class SysDbObject extends Model {
     static table_name = "sys_db_object";
     static attr = {
@@ -18,6 +19,26 @@ module.exports = (sequelize, parent, sysDictionary) => {
       label: DataTypes.STRING(80),
       super_class: DataTypes.STRING(32),
     };
+
+    /**
+     * Get the super class table name for a given table
+     * @param {string} tableName - The name of the table to check
+     * @returns {Promise<string|null>} - Super class table name or null if no super class exists
+     */
+    static async getSuperClass(tableName) {
+      try {
+        const result = await this.findOne({
+          where: { 
+            name: tableName
+          },
+          attributes: ['super_class']
+        });
+        return result?.dataValues?.super_class || null;
+      } catch (error) {
+        console.error('[SysDbObject::getSuperClass] Error:', error);
+        return null;
+      }
+    }
 
     // Helper method to format table name for display
     static _formatDisplayName(name) {

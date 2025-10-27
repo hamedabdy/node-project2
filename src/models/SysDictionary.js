@@ -4,9 +4,8 @@ const { DataTypes, Model, Op } = require("sequelize");
 // IMPORT SysMetaData Model class
 const Utils = require("../utils/utils");
 const utils = new Utils();
-const SysGlideObject = require("./SysGlideObject");
 
-module.exports = (sequelize, parent, sysGlideObject) => {
+module.exports = (sequelize, parent) => {
   
   class SysDictionary extends Model {
     static table_name = "sys_dictionary";
@@ -163,16 +162,44 @@ module.exports = (sequelize, parent, sysGlideObject) => {
 
     // TODO : Methods : delete row, MultipleDelete rows
 
-    static async getAttribs(tableName, no_count) {
-      return await this.getRows({
+    static async getAttribs(tableName) {
+      // First get records for the given table
+      const tableRecords = await this.getRows({
         where: { name: tableName, internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE } },
-        no_count: utils.bool(no_count),
-      }).then((records) => {
-        return {
-          rows: records.rows.map((r) => r.dataValues),
-          count: records.count,
-        };
+        no_count: true
       });
+
+      // console.table("table records : ", tableRecords);
+      
+
+      // Get the super_class using SysDbObject
+      const superClass = await this.sysDbObject.getSuperClass(tableName);
+
+      console.log("superclass : ", superClass);
+      
+
+      if (!superClass) {
+        // If no super_class, return just the table records
+        return {
+          rows: tableRecords.rows.map((r) => r.dataValues)
+        };
+      }
+
+      // Get super_class table records
+      const superClassRecords = await this.getRows({
+        where: { name: superClass, internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE } },
+        no_count: true
+      });
+
+      console.log("table records : ", superClassRecords.rows.map((r) => r.dataValues));
+
+      // Combine and return both sets of records
+      return {
+        rows: [
+          ...tableRecords.rows.map((r) => r.dataValues),
+          ...superClassRecords.rows.map((r) => ({...r.dataValues, inherited: true}))
+        ]
+      };
     }
 
     // overload the `create` method
@@ -414,7 +441,7 @@ module.exports = (sequelize, parent, sysGlideObject) => {
     }
   }
 
-  // Initialize the SysGlideObject class by calling the init method
+  // Initialize the SysDictionary class by calling the init method
   SysDictionary.init(SysDictionary.attr, {
     // Specify the sequelize instance and the table name
     sequelize,
