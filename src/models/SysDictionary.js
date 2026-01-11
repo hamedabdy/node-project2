@@ -35,7 +35,7 @@ module.exports = (sequelize, parent) => {
      */
     static async _createColumn(sysDictionary) {
       const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
-      const type = sysGlideObject.customDataTypes[internal_type](max_length);
+      const type = this.sysGlideObject.customDataTypes[internal_type](max_length);
       // Add a column to the table
       try {
         return sequelize
@@ -75,8 +75,8 @@ module.exports = (sequelize, parent) => {
       if (!instance) return { status: "fail", err: "Record not found" };
 
       // Retrieve the actual type name from SysGlideObject using the internal_type sys_id
-      const internalTypeName = await SysGlideObject(sequelize, parent).getGlideObjectNameBySysId(internal_type);
-      const type = sysGlideObject.customDataTypes[internalTypeName](max_length);
+      const internalTypeName = await this.sysGlideObject.getGlideObjectNameBySysId(internal_type);
+      const type = this.sysGlideObject.customDataTypes[internalTypeName](max_length);
 
       return sequelize
         .getQueryInterface()
