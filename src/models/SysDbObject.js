@@ -8,6 +8,8 @@ const BaseModel = require("./BaseModel")();
 /**
  * @param {object} sequelize : DB connection
  * @param {object} parent : parent class model (ex: SysMetaData)
+ * @param {object} sysDictionary : SysDictionary model for cascade create and delete of collections and fields
+ * @returns {object} SysDbObject model
  */
 module.exports = (sequelize, parent) => {
   
@@ -63,10 +65,10 @@ module.exports = (sequelize, parent) => {
         await this.createTableIfNotExists(data.name);
         await parent.create(data, options); // create record in parent table (sys_metadata)
 
-        await sysDictionary.createCollection(data, options);
+        await this.sysDictionary.createCollection(data, options);
         
         // If super_class is specified, copy fields from parent table otherwise, use base model fields
-        await sysDictionary._copyParentFields(data.name, data.super_class);
+        await this.sysDictionary._copyParentFields(data.name, data.super_class);
       }
 
       return new Promise((resolve, reject) => {
@@ -94,7 +96,7 @@ module.exports = (sequelize, parent) => {
           }
 
           // Delete related records in sys_dictionary first (collection and its fields)
-          await sysDictionary.deleteCollection(data, options);
+          await this.sysDictionary.deleteCollection(data, options);
 
           // Delete the corresponding record in sys_metadata with the same sys_id
           await parent.deleteRow({ where: { sys_id: record.sys_id } }, options);
