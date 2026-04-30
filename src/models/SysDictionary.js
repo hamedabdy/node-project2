@@ -210,14 +210,13 @@ module.exports = (sequelize, parent) => {
       });
 
       // Combine and return both sets of records.
-      // For inherited rows, omit the superclass sys_id to avoid exposing the parent row identifier.
+      // Exclude inherited sys_id field from superclass rows and omit the superclass sys_id value.
       return {
         rows: [
           ...tableRecords.rows.map((r) => r.dataValues),
-          ...superClassRecords.rows.map((r) => {
-            const { sys_id, ...dataValues } = r.dataValues;
-            return { ...dataValues, inherited: true };
-          })
+          ...superClassRecords.rows
+            .filter((r) => r.dataValues.element !== "sys_id")
+            .map((r) => ({ ...r.dataValues, inherited: true }))
         ]
       };
     }
