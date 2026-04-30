@@ -42,6 +42,26 @@ module.exports = (sequelize, parent) => {
       }
     }
 
+    /**
+     * Get all child tables for a given table (tables that inherit from it)
+     * @param {string} tableName - The name of the parent table
+     * @returns {Promise<Array<string>>} - Array of child table names
+     */
+    static async getChildTables(tableName) {
+      try {
+        const results = await this.findAll({
+          where: { 
+            super_class: tableName
+          },
+          attributes: ['name']
+        });
+        return results.map(result => result.dataValues.name);
+      } catch (error) {
+        console.error('[SysDbObject::getChildTables] Error:', error);
+        return [];
+      }
+    }
+
     // Helper method to format table name for display
     static _formatDisplayName(name) {
       // Remove 'u_' prefix if it exists
