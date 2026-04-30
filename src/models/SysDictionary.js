@@ -35,11 +35,25 @@ module.exports = (sequelize, parent) => {
      */
     static async _createColumn(sysDictionary) {
       const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
+      const queryInterface = sequelize.getQueryInterface();
       const type = this.sysGlideObject.customDataTypes[internal_type](max_length);
-      // Add a column to the table
+
       try {
-        return sequelize
-          .getQueryInterface()
+        const tableDefinition = await queryInterface.describeTable(name);
+        if (tableDefinition[element]) {
+          console.log("[SysDictionary::_createColumn] Column already exists, skipping: ", element);
+          return { status: "success" };
+        }
+      } catch (describeError) {
+        // Table may not exist yet; continue to create the column later if it does.
+        // If the error is not "table does not exist", we still want to proceed and let addColumn fail.
+        if (!describeError || !describeError.sqlState) {
+          console.warn("[SysDictionary::_createColumn] Could not describe table, continuing: ", describeError);
+        }
+      }
+
+      try {
+        return queryInterface
           .addColumn(name, element, {
             type: type,
             defaultValue: utils.nil(default_value)
@@ -190,8 +204,6 @@ module.exports = (sequelize, parent) => {
         where: { name: superClass, internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE } },
         no_count: true
       });
-
-      console.log("table records : ", superClassRecords.rows.map((r) => r.dataValues));
 
       // Combine and return both sets of records
       return {
