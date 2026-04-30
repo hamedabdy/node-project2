@@ -26,6 +26,16 @@ module.exports = () => {
         defaultValue: 'system',
         allowNull: false
       },
+      sys_created_on: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        allowNull: false
+      },
+      sys_updated_on: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        allowNull: false
+      },
       sys_mod_count: {
         type: DataTypes.STRING(6),
         allowNull: false,
