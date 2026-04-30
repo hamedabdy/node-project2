@@ -176,21 +176,25 @@ module.exports = (sequelize, parent) => {
 
     // TODO : Methods : delete row, MultipleDelete rows
 
+    /**
+     * Retrieve attribute definitions for a given table.
+     *
+     * This method returns all dictionary records for the requested table and,
+     * if the table has a superclass, also returns inherited attribute records
+     * from that superclass. Collection-type internal records are excluded.
+     *
+     * @param {string} tableName - The name of the table to retrieve attributes for.
+     * @returns {Promise<{rows: Array<object>}>} An object containing the rows of attribute definitions.
+     */
     static async getAttribs(tableName) {
       // First get records for the given table
       const tableRecords = await this.getRows({
         where: { name: tableName, internal_type: { [Op.ne]: this.INTERNAL_COLLECION_TYPE } },
         no_count: true
-      });
-
-      // console.table("table records : ", tableRecords);
-      
+      });      
 
       // Get the super_class using SysDbObject
-      const superClass = await this.sysDbObject.getSuperClass(tableName);
-
-      console.log("superclass : ", superClass);
-      
+      const superClass = await this.sysDbObject.getSuperClass(tableName);      
 
       if (!superClass) {
         // If no super_class, return just the table records
@@ -205,13 +209,35 @@ module.exports = (sequelize, parent) => {
         no_count: true
       });
 
-      // Combine and return both sets of records
+      // Combine and return both sets of records.
+      // For inherited rows, omit the superclass sys_id to avoid exposing the parent row identifier.
       return {
         rows: [
           ...tableRecords.rows.map((r) => r.dataValues),
-          ...superClassRecords.rows.map((r) => ({...r.dataValues, inherited: true}))
+          ...superClassRecords.rows.map((r) => {
+            const { sys_id, ...dataValues } = r.dataValues;
+            return { ...dataValues, inherited: true };
+          })
         ]
       };
+    }
+
+    /**
+     * Create columns in child tables without inserting dictionary records
+     * Only creates the physical column at DB level
+     * @param {string} parentTableName - The name of the parent table
+     * @param {Object} columnData - The column data (element, internal_type, max_length, default_value, mandatory)
+     * @returns {Promise<void>}
+     */
+    static async _createColumnsInChildTables(parentTableName, columnData) {
+      const childTables = await this.sysDbObject.getChildTables(parentTableName);
+      for (const childTable of childTables) {
+        const childColumnData = {
+          ...columnData,
+          name: childTable
+        };
+        await this._createColumn(childColumnData);
+      }
     }
 
     // overload the `create` method
@@ -227,7 +253,11 @@ module.exports = (sequelize, parent) => {
       const record = await super.create(data, options);
 
       // ignore if type is collection
-      if (data.internal_type != this.INTERNAL_COLLECION_TYPE) this._createColumn(data);
+      if (data.internal_type != this.INTERNAL_COLLECION_TYPE) {
+        this._createColumn(data);
+        // Create columns in child tables (DB level only, no dictionary records)
+        await this._createColumnsInChildTables(data.name, data);
+      }
 
       parent.create(data, options); // Create a new record in sys_metadata
 
