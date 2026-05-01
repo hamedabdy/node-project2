@@ -79,16 +79,16 @@ router.get("/rows/:table_name", async (req, res) => {
   }
 });
 
-// GET SYS_NAME by SYS_ID
-router.get("/getSysName/:table_name", async (req, res) => {
+// GET DISPLAY VALUE by SYS_ID
+router.get("/getDisplayValue/:table_name", async (req, res) => {
   const { table_name } = req.params;
   const { value, reference_key } = req.query;
   try {
-    const result = await sequelizer.getSysNameBySysId(table_name, value, reference_key);
+    const result = await sequelizer.getDisplayValueFromSysId(table_name, value, reference_key);
     res.json(result);
   } catch (error) {
-    console.error("GET SYS_NAME : error: ", error);
-    res.status(500).json({ error: "GET SYS_NAME : Internal Server Error" });
+    console.error("GET DISPLAY VALUE : error: ", error);
+    res.status(500).json({ error: "GET DISPLAY VALUE : Internal Server Error" });
   }
 });
 
