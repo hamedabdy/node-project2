@@ -155,33 +155,36 @@ class Sequelizer {
   }
 
   /**
-   * Queries the database for a given table name and sys_id to return the sys_name value.
+   * Queries the database for a given table name and sys_id to return the configured display value.
    * @param {string} tableName The name of the table to query.
    * @param {string} sys_id The sys_id of the record to retrieve.
-   * @returns {Promise<Object>} An object containing the sys_name value or an error.
+   * @param {string} reference_key The key to match the value against.
+   * @returns {Promise<Object>} An object containing the display value or an error.
    */
-  async getSysNameBySysId(tableName, value, reference_key) {
+  async getDisplayValueFromSysId(tableName, value, reference_key) {
     try {
+      const displayField = await this.sysDictionary.getDisplayField(tableName);
       const Model = await this.getTableMapping(tableName);
-      const result = await Model.findOne({where: {[reference_key]: value}}, {
-        attributes: ['sys_name']
-      });
+      const where = { [reference_key || 'sys_id']: value };
+      const attributes = displayField ? [displayField.element] : ['sys_name'];
+      const result = await Model.findOne({ where, attributes });
       if (result) {
-        return { data: result.sys_name, status: "success" };
-      } else {
-        return { data: null, status: "fail", err: "Record not found" };
+        const displayValue = displayField ? result[displayField.element] : result.sys_name;
+        return { data: displayValue, status: 'success' };
       }
+
+      return { data: null, status: 'fail', err: 'Record not found' };
     } catch (e) {
-      console.error(`[SEQUELIZER] Error getting sys_name for table ${tableName}, value ${value}: `, e);
-      return { data: null, status: "fail", err: e.message };
+      console.error(`[SEQUELIZER] Error getting display value for table ${tableName}, value ${value}: `, e);
+      return { data: null, status: 'fail', err: e.message };
     }
   }
 
   /**
-   * Queries the database for a given table name and sys_id to return the sys_name value.
+   * Queries the database for a given table name and sys_id to return the display value.
    * This function is intended to retrieve the display value for a reference key.
    * @param {string} sys_id The sys_id of the record to retrieve.
-   * @returns {Promise<Object>} An object containing the sys_name value or an error.
+   * @returns {Promise<Object>} An object containing the display value or an error.
    */
   async getReferenceKeyBySysId(sys_id) {
     let ret = {data: null, status: "fail"};
