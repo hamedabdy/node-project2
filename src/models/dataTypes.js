@@ -16,3 +16,8 @@ const sequelizeDataTypes = {
 };
 
 module.exports = sequelizeDataTypes;
+
+
+/** TODO:
+ * - add child data types (ex: System class name, Version)
+ */
