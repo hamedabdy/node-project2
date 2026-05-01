@@ -174,6 +174,38 @@ module.exports = (sequelize, parent) => {
         });
     }
 
+    /**
+     * Get the dictionary record that is marked as display=true for a given table.
+     * @param {string} tableName - The table name to lookup.
+     * @returns {Promise<Model|null>} The display field record, or null if none found.
+     */
+    static async getDisplayField(tableName) {
+      try {
+        const displayField = await this.findOne({
+          where: {
+            name: tableName,
+            display: {
+              [Op.in]: [true, 1, 'true', '1'],
+            },
+          },
+        });
+
+        if (displayField) {
+          return displayField;
+        }
+
+        const superClass = await this.sysDbObject.getSuperClass(tableName);
+        if (superClass) {
+          return await this.getDisplayField(superClass);
+        }
+
+        return null;
+      } catch (error) {
+        console.error(`[SysDictionary::getDisplayField] Error querying display field for ${tableName}:`, error);
+        return null;
+      }
+    }
+
     // TODO : Methods : delete row, MultipleDelete rows
 
     /**
