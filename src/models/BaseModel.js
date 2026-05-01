@@ -41,6 +41,10 @@ module.exports = () => {
         allowNull: false,
         // defaultValue: "0",
       },
+      sys_class_name: {
+        type: DataTypes.STRING(80),
+        allowNull: false,
+      },
     };
 
     /**
