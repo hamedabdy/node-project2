@@ -10,6 +10,7 @@ const SysMetaData = require("../models/SysMetaData");
 const SysGlideObject = require("../models/SysGlideObject");
 const SysDictionary = require("../models/SysDictionary");
 const SysDbObject = require("../models/SysDbObject");
+const XmlImport = require("./XmlImport");
 
 const sequelize = new Sequelize(
   dbConfig.database,
@@ -39,6 +40,8 @@ class Sequelizer {
     this.sysDbObject.sysDictionary = this.sysDictionary;
     this.sysDictionary.sysGlideObject = this.sysGlideObject;
     this.sysDictionary.sysDbObject = this.sysDbObject;
+
+    this.xmlImport = new XmlImport(this);
 
 
     this.sequelize.sync({ alter: false, force: false });

@@ -5,8 +5,8 @@ const Sequelizer = require("../services/Sequelizer");
 const sequelizer = new Sequelizer();
 
 const utils = require("../utils/utils"); // Load utilies
-
 // const dbBackup = require("../services/DbBackup");
+const { upload, createXmlImportMiddleware } = require("../middleware/xmlImportHandler");
 
 /*
  * SEQUELIZE ROUTES
@@ -141,5 +141,10 @@ router.get("/db-backup", async (req, res) => {
     res.status(500).json({ error: "DB BACKUP : Internal Server Error", message: e.message });
   }
 });
+
+/*
+ * XML IMPORT ROUTE
+ */
+router.post("/import/xml", upload.single('file'), createXmlImportMiddleware(sequelizer));
 
 module.exports = router;
