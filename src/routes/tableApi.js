@@ -7,6 +7,7 @@ const sequelizer = new Sequelizer();
 const utils = require("../utils/utils"); // Load utilies
 // const dbBackup = require("../services/DbBackup");
 const { upload, createXmlImportMiddleware } = require("../middleware/xmlImportHandler");
+const { compileSysUiPage } = require("../middleware/genericRouterPostMiddleware");
 
 /*
  * SEQUELIZE ROUTES
@@ -27,20 +28,6 @@ router.get("/tables", async (req, res) => {
 router.get("/table_info/:table_name", async (req, res) => {
   const { table_name } = req.params;
   const result = await sequelizer.getTableInfo(table_name);
-  res.json(result);
-});
-
-// CREATE a TABLE ==> DO NOT USE. Use Create Record in sys_db_object
-// router.get("/create_table", async (req, res) => {
-//   const { name } = req.query;
-//   const result = await sequelizer.createTable(name);
-//   res.json(result);
-// });
-
-// DROP a TABLE ==> DO NOT USE. Use Delete Record in sys_db_object
-router.get("/drop_table", async (req, res) => {
-  const { name } = req.query;
-  const result = await sequelizer.dropTable(name);
   res.json(result);
 });
 
@@ -105,7 +92,7 @@ router.get("/getReferenceKey/:sys_id", async (req, res) => {
 });
 
 // INSERT / UPDATE ROW
-router.post("/rows/:table_name", async (req, res) => {
+router.post("/rows/:table_name", compileSysUiPage, async (req, res) => {
   try {
     const result = await sequelizer.handleRecord(req);
     res.json(result);
