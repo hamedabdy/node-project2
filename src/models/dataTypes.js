@@ -13,6 +13,8 @@ const sequelizeDataTypes = {
   table_name: () =>  DataTypes.STRING(80),
   choice: () => DataTypes.STRING(40),
   html: (max_length) => DataTypes.STRING(max_length),
+  text: () => DataTypes.TEXT,
+  script: () => DataTypes.TEXT,
 };
 
 module.exports = sequelizeDataTypes;
