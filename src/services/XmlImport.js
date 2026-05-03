@@ -25,44 +25,45 @@ class XmlImport {
 
       // Get the table name from the child element
       const tableNames = Object.keys(unload).filter((key) => key !== '@_unload_date');
-      if (tableNames.length !== 1) {
-        throw new Error('Invalid XML: Expected exactly one table element under <unload>');
+      if (tableNames.length == 0) {
+        throw new Error('Invalid XML: No table element found under <unload>');
       }
 
-      const tableName = tableNames[0];
-      const tableData = unload[tableName];
+      const results = [];
 
-      // Get the action attribute
-      const action = tableData['@_action'];
-      if (!action) {
-        throw new Error('Invalid XML: No action attribute found on table element');
-      }
+      for (const tableName of tableNames) {
+        // Normalise to array to support both single and multi-record payloads.
+        const rawData = unload[tableName];
+        const records = Array.isArray(rawData) ? rawData : [rawData];
 
-      // Extract the fields
-      const fields = {};
-      for (const [key, value] of Object.entries(tableData)) {
-        if (key.startsWith('@_')) continue; // Skip attributes
-        // Handle tags with attributes and text (e.g. <tag attr="1">Text</tag>)
-        if (value !== null && typeof value === 'object') {
-          if (value['#text'] !== undefined) {
-            fields[key] = value['#text'];
-          } else {
-            // It's an object with attributes but no text content 
-            // e.g., <super_class display_value=""/>
-            fields[key] = ""; 
+        for (const tableData of records) {
+          const action = tableData['@_action'];
+          if (!action) {
+            throw new Error('Invalid XML: No action attribute found on table element');
           }
-        } else {
-          // Handle simple tags with no attributes (e.g. <tag>Text</tag> or empty string)
-          fields[key] = value;
+
+          const fields = this._extractFields(tableData);
+
+          if (action === 'INSERT_OR_UPDATE')
+            results.push(await this.insertOrUpdate(tableName, fields));
+          else
+            throw new Error(`Unsupported action: ${action}`);
         }
       }
 
-      // Now, based on action, perform insert or update
-      if (action === 'INSERT_OR_UPDATE') {
-        return await this.insertOrUpdate(tableName, fields);
-      }
+      // Return a single result object for single-record payloads (backwards-compatible),
+      // or a summary object for multi-record payloads.
+      if (results.length === 1)
+        return results[0];
 
-      throw new Error(`Unsupported action: ${action}`);
+      const failed = results.filter((r) => r.status === 'fail');
+      return {
+        status: failed.length === 0 ? 'success' : 'partial',
+        total: results.length,
+        succeeded: results.length - failed.length,
+        failed: failed.length,
+        results,
+      };
     } catch (error) {
       console.error('XML Import error:', error);
       return { status: 'fail', err: error.message };
@@ -73,9 +74,8 @@ class XmlImport {
     let fileContents;
     try {
       fileContents = await fs.readFile(filePath, 'utf8');
-      if (!fileContents.trim().startsWith('<?xml') || !fileContents.includes('<unload')) {
+      if (!fileContents.trim().startsWith('<?xml') || !fileContents.includes('<unload'))
         throw new Error('Invalid XML file format');
-      }
       return await this.import(fileContents);
     } finally {
       await this.safeRemoveFile(filePath);
@@ -90,11 +90,31 @@ class XmlImport {
     }
   }
 
+    /**
+   * Extracts plain field values from a parsed table-row object.
+   * Handles three cases:
+   *   1. Simple text node:          <field>value</field>           → "value"
+   *   2. Text node with attributes: <field attr="x">value</field>  → "value"
+   *   3. Attribute-only node:       <field display_value=""/>      → ""
+   */
+  _extractFields(tableData) {
+    const fields = {};
+    for (const [key, value] of Object.entries(tableData)) {
+      if (key.startsWith('@_')) continue;
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        fields[key] = value['#text'] !== undefined ? value['#text'] : '';
+      } else {
+        fields[key] = value ?? '';
+      }
+    }
+    return fields;
+  }
+
   async insertOrUpdate(tableName, fields) {
     const sys_id = fields.sys_id;
-    if (!sys_id) {
+    if (!sys_id)
       throw new Error('sys_id is required for INSERT_OR_UPDATE');
-    }
 
     // Get the model
     const Model = await this.sequelizer.getTableMapping(tableName);
