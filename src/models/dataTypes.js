@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 
 const sequelizeDataTypes = {
-  string: (max_length) => DataTypes.STRING(max_length || 40),
+  string: (max_length) => DataTypes.TEXT,
   integer: () => DataTypes.INTEGER,
   decimal: (max_length) => DataTypes.DECIMAL(max_length, 2),
   boolean: () =>  DataTypes.BOOLEAN,
