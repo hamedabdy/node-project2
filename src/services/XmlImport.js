@@ -42,8 +42,19 @@ class XmlImport {
       const fields = {};
       for (const [key, value] of Object.entries(tableData)) {
         if (key.startsWith('@_')) continue; // Skip attributes
-        if (key === '#text') continue; // Skip text nodes
-        fields[key] = value && value['#text'] !== undefined ? value['#text'] : value;
+        // Handle tags with attributes and text (e.g. <tag attr="1">Text</tag>)
+        if (value !== null && typeof value === 'object') {
+          if (value['#text'] !== undefined) {
+            fields[key] = value['#text'];
+          } else {
+            // It's an object with attributes but no text content 
+            // e.g., <super_class display_value=""/>
+            fields[key] = ""; 
+          }
+        } else {
+          // Handle simple tags with no attributes (e.g. <tag>Text</tag> or empty string)
+          fields[key] = value;
+        }
       }
 
       // Now, based on action, perform insert or update
