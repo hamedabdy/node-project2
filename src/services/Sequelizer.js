@@ -289,8 +289,7 @@ class Sequelizer {
       return { sys_id: "", status: "fail", err: "Record not found" };
 
     req.body.sys_updated_on = this.sequelize.fn("NOW");
-    // TODO : convert string to datetime
-    delete req.body.sys_created_on; // TEMP solution
+    delete req.body.sys_created_on;
 
     return await Model.update(req.body, {
       where: {
@@ -310,26 +309,68 @@ class Sequelizer {
   async deleteRow(req) {
     const { table_name } = req.params;
     const record = req.query; // needs sanitization to prevent SQL / HTML injection
-
-    // Get speccific or generic Model
-    const Model = await this.getTableMapping(table_name);
-
-    return await Model.destroy({
-      where: record,
-      individualHooks: true,
-      no_count: false,
-    })
-      .then(() => {
-        console.log("\n%s - Record deleted : %o\n", table_name, record);
-        return { record: record, status: "success" };
-      })
-      .catch((e) => {
-        console.error("\n%s - Delete row error : %s", table_name, e);
-        return { record: record, status: "fail", err: e };
-      });
+    // const t = await this.sequelize.transaction();
+    try {
+      await this._parentCascadeDelete(table_name, record, {});
+      // await t.commit();
+      return { record, status: "success" };
+    } catch (e) {
+      // await t.rollback();
+      console.error("[SEQUELIZER::deleteRow] %s - Delete row error : %s", table_name, e);
+      return { record, status: "fail", err: e };
+    }   
   }
 
-  ///////
+  /**
+ * Recursively deletes a record up the super_class chain.
+ * Works for both named models (sys_db_object, sys_dictionary)
+ * and dynamic/generic models (incident, task, etc.)
+ *
+ * @param {string} table_name - current table to delete from
+ * @param {string} record - the record to delete
+ * @param {Transaction} t - shared transaction
+ */
+async _parentCascadeDelete(table_name, record, t) {
+  // Delete from current table
+  const Model = await this.getTableMapping(table_name);
+  console.debug("[SEQUELIZER::_parentCascadeDelete] Model : %o \n\nfrom %s \n\n record : %o", Model, table_name, record);
+  await Model.destroy({
+    where: record, // in case of sys_dictionary or sys_db_object, otherwise sys_id is sufficient
+    individualHooks: true,
+    // transaction: t,
+  }).then(() => {
+    console.log("[SEQUELIZER::_parentCascadeDelete] %s - Record deleted : %o\n", table_name, record);
+    return { record, status: "success" };
+  })
+  .catch((e) => {
+    console.error("[SEQUELIZER::_parentCascadeDelete] %s - Delete error : %s", table_name, e);
+    throw e; // Rethrow the error to be handled by the caller
+  });
+
+  console.log("[SEQUELIZER::_parentCascadeDelete] Deleted record : %o from %s", record, table_name);
+
+  const superClass = await this.sysDbObject.getSuperClass(table_name);
+  // Recurse up if parent exists
+  if (superClass)
+    await this._parentCascadeDelete(superClass, record, t);
+}
+
+async getTableMapping(tableName) {
+  const table_map = {
+    sys_db_object: this.sysDbObject,
+    sys_dictionary: this.sysDictionary,
+  };
+
+  let Model = table_map[tableName];
+  if (!Model) {
+    // Dynamically define the model if it doesn't exist in the table_map
+    const { data } = await this.getColumns(tableName);
+    Model = this.sequelize.define(tableName, data);
+  }
+
+  return Model;
+}
+///////
   addHooks(Model, operation, records) {
     switch (operation) {
       case "create":
@@ -377,22 +418,6 @@ class Sequelizer {
       default:
         break;
     }
-  }
-
-  async getTableMapping(tableName) {
-    const table_map = {
-      sys_db_object: this.sysDbObject,
-      sys_dictionary: this.sysDictionary,
-    };
-
-    let Model = table_map[tableName];
-    if (!Model) {
-      // Dynamically define the model if it doesn't exist in the table_map
-      const { data } = await this.getColumns(tableName);
-      Model = this.sequelize.define(tableName, data);
-    }
-
-    return Model;
   }
 }
 

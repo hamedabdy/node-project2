@@ -27,18 +27,16 @@ module.exports = (sequelize, parent) => {
      * @param {string} tableName - The name of the table to check
      * @returns {Promise<string|null>} - Super class table name or null if no super class exists
      */
-    static async getSuperClass(tableName) {
+    static async getSuperClass(tableName, options = {}) {
       try {
         const result = await this.findOne({
-          where: { 
-            name: tableName
-          },
-          attributes: ['super_class']
+          where: { name: tableName },
+          attributes: ['super_class'],
         });
         return result?.dataValues?.super_class || null;
       } catch (error) {
         console.error('[SysDbObject::getSuperClass] Error:', error);
-        return null;
+        throw error; // Rethrow the error to be handled by the caller
       }
     }
 
@@ -47,18 +45,16 @@ module.exports = (sequelize, parent) => {
      * @param {string} tableName - The name of the parent table
      * @returns {Promise<Array<string>>} - Array of child table names
      */
-    static async getChildTables(tableName) {
+    static async getChildTables(tableName, options = {}) {
       try {
         const results = await this.findAll({
-          where: { 
-            super_class: tableName
-          },
-          attributes: ['name']
+          where: { super_class: tableName },
+          attributes: ['name'],
         });
         return results.map(result => result.dataValues.name);
       } catch (error) {
         console.error('[SysDbObject::getChildTables] Error:', error);
-        return [];
+        throw error; // Rethrow the error to be handled by the caller
       }
     }
 
@@ -92,12 +88,10 @@ module.exports = (sequelize, parent) => {
       }
 
       return new Promise((resolve, reject) => {
-        if (!utils.nil(record)) {
-          console.log("[SysDbObject::create] Record created : %o", record.dataValues);
+        if (!utils.nil(record))
           resolve(record);
-        } else {
+        else
           reject("[SysDbObject::create] Could not create table. Missing name attribute");
-        }
       });
     }
 
@@ -114,20 +108,17 @@ module.exports = (sequelize, parent) => {
             console.log("SysDbObject - No record found with name:", name);
             return;
           }
+          // Finally, drop the actual database table
+          await this.dropTableIfExists(name);
 
           // Delete related records in sys_dictionary first (collection and its fields)
           await this.sysDictionary.deleteCollection(data, options);
 
           // Delete the corresponding record in sys_metadata with the same sys_id
-          await parent.deleteRow({ where: { sys_id: record.sys_id } }, options);
+          // await parent.destroy({ where: { sys_id: record.sys_id } }, options); // cascade delete of the record in parent table is handled by cascade delete in sequlizer
 
           // Delete the record in sys_db_object
           await super.destroy(data, options);
-
-          // Finally, drop the actual database table
-          await this.dropTableIfExists(name);
-
-          console.log("SysDbObject - Successfully deleted record and all related data for:", name);
         } catch (e) {
           console.error("SysDbObject - Cascade delete error:", e);
           throw e; // Rethrow the error to be handled by the caller

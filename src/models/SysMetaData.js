@@ -30,62 +30,52 @@ module.exports = (sequelize) => {
           return { data: r, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error("SysMetaData - findBySysId - Error : ", e);
-          return { data: "", status: "fail", err: e };
+          console.error("[SysMetaData::findBySysId] - Error : ", e);
+          throw e; // Rethrow the error to be handled by the caller
         });
     }
 
     static async updateRow(data) {
-      const instance = await SysMetaData.findOne({
-        where: { sys_id: data.sys_id },
-      });
+      const instance = await SysMetaData.findOne({where: { sys_id: data.sys_id }});
       // No record found with the provided sys_id
       if (!instance) return [];
 
       data.sys_updated_on = sequelize.fn("NOW");
-      // TODO : convert string to datetime
-      delete data.sys_created_on; // TEMP solution
+      delete data.sys_created_on;
 
       return await SysMetaData.update(data, {
-        where: {
-          sys_id: data.sys_id,
-        },
+        where: {sys_id: data.sys_id},
         individualHooks: true,
       })
         .then(() => {
           return { sys_id: sys_id, status: "success", err: "" };
         })
         .catch((e) => {
-          console.error("Update row error : ", e);
+          console.error("[SysMetaData::updateRow] - Error : ", e);
           return { sys_id: sys_id, status: "fail", err: e };
         });
     }
 
-    /*
+    /* overload destroy method to delete a record by sys_id
      * @parm: sysID, unoque Id the record to delete
      */
-    static async deleteRow(data, options) {
+    static async destroy(data, options) {
+      console.debug("[SysMetaData::destroy] - sys_id : %s", data);
+      throw new Error("bla bla ");
+      
       const { sys_id } = data.where;
-      console.log("SysMetaData - deleteRow - data : %o", data);
 
       try {
         if (utils.nil(sys_id)) throw new Error("Missing or unknown sys_id");
 
-        return await SysMetaData.destroy({
-          where: { sys_id: sys_id },
-          // returning: true,
-        })
+        return await super.destroy({where: { sys_id: sys_id }})
           .then((result) => {
-            console.log("SYSMETADA - Records deleted : %i", result);
+            console.debug("[SysMetaData::destroy] - Records deleted : %i", result);
             return { sys_id: sys_id, status: "success" };
-          })
-          .catch((e) => {
-            console.error("SysMetaData.destroy error : ", e);
-            return { sys_id: "", status: "fail", err: e };
           });
       } catch (e) {
-        console.error("SysMetaData - deleteRow - Error : ", e);
-        return { sys_id: "", status: "fail", err: e };
+        console.error("[SysMetaData::destroy] - Error : ", e);
+        throw e; // Rethrow the error to be handled by the caller
       }
     }
   }

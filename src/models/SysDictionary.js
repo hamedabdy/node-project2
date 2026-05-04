@@ -33,7 +33,7 @@ module.exports = (sequelize, parent) => {
      * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
-    static async _createColumn(sysDictionary) {
+    static async _createColumn(sysDictionary, options = {}) {
       const { name, element, max_length, internal_type, default_value, mandatory } = sysDictionary;
       const queryInterface = sequelize.getQueryInterface();
       const type = this.sysGlideObject.customDataTypes[internal_type](max_length);
@@ -44,15 +44,6 @@ module.exports = (sequelize, parent) => {
           console.log("[SysDictionary::_createColumn] Column already exists, skipping: ", element);
           return { status: "success" };
         }
-      } catch (describeError) {
-        // Table may not exist yet; continue to create the column later if it does.
-        // If the error is not "table does not exist", we still want to proceed and let addColumn fail.
-        if (!describeError || !describeError.sqlState) {
-          console.warn("[SysDictionary::_createColumn] Could not describe table, continuing: ", describeError);
-        }
-      }
-
-      try {
         return queryInterface
           .addColumn(name, element, {
             type: type,
@@ -64,14 +55,10 @@ module.exports = (sequelize, parent) => {
           .then(() => {
             console.log("[SysDictionary::_createColumn] New column added: ", element);
             return { status: "success" };
-          })
-          .catch((error) => {
-            console.log("[SysDictionary::_createColumn] An error occurred: ", error);
-            return { status: "fail" };
           });
       } catch (error) {
-        console.log("[SysDictionary::_createColumn] Exception occurred: ", error);
-        return { status: "fail" };
+        console.error("[SysDictionary::_createColumn] Exception occurred: ", error);
+        throw error;
       }
     }
 
@@ -80,7 +67,7 @@ module.exports = (sequelize, parent) => {
      * @param {Model} sysDictionary sys_dictionary Sequelize model object
      * @returns Object {status : "success | fail"}
      */
-    static async updateColumn(sysDictionary) {
+    static async updateColumn(sysDictionary, options = {}) {
       if (utils.nil(sysDictionary)) return;
 
       const { sys_id, name, element, max_length, unique, default_value, internal_type } = sysDictionary;
@@ -106,27 +93,28 @@ module.exports = (sequelize, parent) => {
           return { status: "success" };
         })
         .catch((error) => {
-          console.log("[SysDictionary::updateColumn] An error occurred: ", error);
-          return { status: "fail" };
+          console.error("[SysDictionary::updateColumn] An error occurred: ", error);
+          throw error;
         });
     }
 
     /**
      *
-     * @param {string} tableName name of the table to remove column from
-     * @param {string} columnName name of column to remove
+     * @param {string} tableName name of the table to delete column from
+     * @param {string} columnName name of column to delete
      * @returns {object} {table, column, status: success | fail, err}
      */
-    static async removeColumn(tableName, columnName) {
+    static async deleteColumn(tableName, columnName, options = {}) {
+
       return sequelize
         .getQueryInterface()
         .removeColumn(tableName, columnName)
         .then((result) => {
-          console.log("[SysDictionary::removeColumn] Column deleted : ", result);
+          console.log("[SysDictionary::deleteColumn] Column deleted : ", result);
           return {table: tableName, column: columnName, status: "success", err: "", };
         })
         .catch((e) => {
-          console.error("[SysDictionary::removeColumn] Remove Column error : ", e);
+          console.error("[SysDictionary::deleteColumn] Delete Column error : ", e);
           return {table: tableName, column: columnName, status: "fail", err: e, };
         });
     }
@@ -154,24 +142,21 @@ module.exports = (sequelize, parent) => {
      * @returns {promises} array of object records or error
      */
     static async getRows(options) {
-      if (utils.bool(options.no_count)) {
-        return await this.findAll(options)
+      try {
+        if (utils.bool(options.no_count)) {
+          return await this.findAll(options)
+            .then((records) => {
+              return {rows: records, count: records.length};
+            });
+        }
+        return await this.findAndCountAll(options)
           .then((records) => {
-            return {rows: records, count: records.length};
-          })
-          .catch((e) => {
-            console.error("[SysDictionary::getRows] Error : ", e);
-            return e;
+            return records;
           });
+      } catch (e) {
+        console.error("[SysDictionary::getRows] Exception occurred: ", e);
+        throw e;
       }
-      return await this.findAndCountAll(options)
-        .then((records) => {
-          return records;
-        })
-        .catch((e) => {
-          console.error("[SysDictionary::getRows] Error : ", e);
-          return e;
-        });
     }
 
     /**
@@ -260,14 +245,14 @@ module.exports = (sequelize, parent) => {
      * @param {Object} columnData - The column data (element, internal_type, max_length, default_value, mandatory)
      * @returns {Promise<void>}
      */
-    static async _createColumnsInChildTables(parentTableName, columnData) {
-      const childTables = await this.sysDbObject.getChildTables(parentTableName);
+    static async _createColumnsInChildTables(parentTableName, columnData, options = {}) {
+      const childTables = await this.sysDbObject.getChildTables(parentTableName, options);
       for (const childTable of childTables) {
         const childColumnData = {
           ...columnData,
           name: childTable
         };
-        await this._createColumn(childColumnData);
+        await this._createColumn(childColumnData, options);
       }
     }
 
@@ -280,43 +265,42 @@ module.exports = (sequelize, parent) => {
       }
       data.sys_class_name = this.table_name;
 
-      // Insert the new row in table
-      const record = await super.create(data, options);
+      try {
+        // ignore if type is collection
+        if (data.internal_type != this.INTERNAL_COLLECION_TYPE) {
+          this._createColumn(data, options); // Create the column in DB
+          // Create columns in child tables (DB level only, no dictionary records)
+          await this._createColumnsInChildTables(data.name, data, options);
+        }
 
-      // ignore if type is collection
-      if (data.internal_type != this.INTERNAL_COLLECION_TYPE) {
-        this._createColumn(data);
-        // Create columns in child tables (DB level only, no dictionary records)
-        await this._createColumnsInChildTables(data.name, data);
+        parent.create(data, options); // Create a new record in sys_metadata
+        // Insert the new row in table
+        const record = await super.create(data, options);
+        return record;
+      } catch (e) {
+        console.error("[SysDictionary::create] Error : ", e);
+        throw e; // Rethrow the error to be handled by the caller
       }
-
-      parent.create(data, options); // Create a new record in sys_metadata
-
-      return new Promise((resolve, reject) => {
-        if (!utils.nil(record)) resolve(record);
-        else
-          reject({
-            sys_id: "",
-            status: "fail",
-            err: "[SysDictionary::create] Insert row error",
-          });
-      });
     }
 
     // overload the `destroy` method
     static async destroy(data, options) {
-      // console.log("sys_dictionary - destroy - data : %o", data);
+      const { sys_id, name, element } = data.where;
 
-      const record = await super
-        .destroy({ where: { sys_id: data.where.sys_id } }, options)
-        .then((result) => {
-          // console.log("SysDictionary - Records deleted : %s", result);
-          return { sys_id: data.where.sys_id, status: "success" };
-        })
-        .catch((e) => {
-          console.error("[SysDictionary::destroy] error : %s", e);
-          return { sys_id: "", status: "fail", err: e };
-        });
+      try {
+        // Delete the column at DB level first before deleting the record in sys_dictionary
+        await this.deleteColumn(name, element);
+
+        // Then delete the record in sys_dictionary which will cascade delete the record in sys_metadata due to the association and cascade delete setup in sequlizer
+        const record = await super
+          .destroy({ where: { sys_id } }, options)
+          .then((result) => {
+            return { sys_id, status: "success" };
+          });
+      } catch (e) {
+        console.error("[SysDictionary::destroy] Exception occurred: %s", e);
+        throw e; // Rethrow the error to be handled by the caller
+      }
     }
 
     async updateRow(data) {
@@ -326,16 +310,10 @@ module.exports = (sequelize, parent) => {
         return { sys_id: "", status: "fail", err: "Record not found" };
 
       data.sys_updated_on = this.sequelize.fn("NOW");
-      // TODO : convert string to datetime
-      delete req.body.sys_created_on; // TEMP solution
+      delete req.body.sys_created_on;
 
       return await instance
-        .update(data, {
-          where: {
-            sys_id: data.sys_id,
-          },
-          individualHooks: true,
-        })
+        .update(data, {where: {sys_id: data.sys_id,}, individualHooks: true,})
         .then(() => {
           return { sys_id: data.sys_id, status: "success", err: "" };
         })
@@ -356,57 +334,39 @@ module.exports = (sequelize, parent) => {
       // Only create the collection record, parent fields are copied by SysDbObject.create
       return await this.create(data, options);
     }
-
+    
     static async deleteCollection(data, options) {
       try {
         const tableName = data.where.name;
-        // console.log("sysDictionary - Starting deletion for table:", tableName);
-
         // Find all dictionary records for this table (collection and fields)
-        const allRecords = await super.findAll({
-          where: {
-            name: tableName
-          }
-        });
+        const allRecords = await super.findAll({where: {name: tableName}});
 
         if (!allRecords || allRecords.length === 0) {
-          console.log("[SysDictionary::deleteCollection] No records found for:", tableName);
+          console.warn("[SysDictionary::deleteCollection] No records found for:", tableName);
           return;
         }
 
         // Get the collection record
         const collection = allRecords.find(record => record.internal_type === 'collection');
         if (!collection) {
-          console.log("[SysDictionary::deleteCollection] No collection record found for:", tableName);
+          console.warn("[SysDictionary::deleteCollection] No collection record found for:", tableName);
           return;
         }
 
         // Get all sys_ids to delete from sys_metadata
         const sysIdsToDelete = allRecords.map(record => record.sys_id);
-        // console.log("sysDictionary - Deleting sys_metadata records for sys_ids:", sysIdsToDelete);
 
         try {
           // Delete corresponding records in sys_metadata first
-          const deletedMetadata = await parent.destroy({
-            where: {
-              sys_id: { [Op.in]: sysIdsToDelete }
-            }
-          }, options);
-          console.log(`[SysDictionary::deleteCollection] Deleted ${deletedMetadata} records in sys_metadata`);
+          const deletedMetadata = await parent.destroy({where: {sys_id: { [Op.in]: sysIdsToDelete }}}, options);
         } catch (error) {
           console.error("[SysDictionary::deleteCollection] Error deleting sys_metadata records:", error);
           throw error;
         }
 
-        // Delete all field records for this table
+        // Delete all field records for this table excluding the collection record itself
         try {
-          const deletedFields = await super.destroy({
-            where: {
-              name: tableName,
-              sys_id: { [Op.ne]: collection.sys_id } // Exclude the collection record itself
-            }
-          }, options);
-          console.log(`[SysDictionary::deleteCollection] Deleted ${deletedFields} field records for table:`, tableName);
+          const deletedFields = await super.destroy({where: {name: tableName, sys_id: { [Op.ne]: collection.sys_id }}}, options);
         } catch (error) {
           console.error("[SysDictionary::deleteCollection] Error deleting field records:", error);
           throw error;
@@ -414,12 +374,7 @@ module.exports = (sequelize, parent) => {
 
         // Delete the collection record itself
         try {
-          await super.destroy({
-            where: {
-              sys_id: collection.sys_id
-            }
-          }, options);
-          console.log("[SysDictionary::deleteCollection] Deleted collection record for:", tableName);
+          await super.destroy({where: {sys_id: collection.sys_id}}, options);
         } catch (error) {
           console.error("[SysDictionary::deleteCollection] Error deleting collection record:", error);
           throw error;
@@ -466,14 +421,8 @@ module.exports = (sequelize, parent) => {
         "sys_id"
       ];
 
-      return await this.findAll({
-        where: {
-          element: {
-            [Op.in]: baseFields
-          }
-        },
-        group: ['element'], // Group by element to get unique records
-      }) || [];
+      // Group by element to get unique records
+      return await this.findAll({where: {element: {[Op.in]: baseFields}}, group: ['element'],}) || [];
     }
 
     /**
