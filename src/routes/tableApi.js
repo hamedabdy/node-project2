@@ -5,7 +5,6 @@ const Sequelizer = require("../services/Sequelizer");
 const sequelizer = new Sequelizer();
 
 const utils = require("../utils/utils"); // Load utilies
-// const dbBackup = require("../services/DbBackup"); // use core-db > backup_node_project_db.sh
 const { upload, createXmlImportMiddleware } = require("../middleware/xmlImportHandler");
 const { compileSysUiPage } = require("../middleware/genericRouterPostMiddleware");
 
@@ -112,22 +111,6 @@ router.delete("/rows/:table_name", async (req, res) => {
     res.status(500).json({ error: "DELETE ROW : Internal Server Error" });
   }
 });
-
-/*
- * DB BACKUP ROUTES
- */
-// router.get("/db-backup", async (req, res) => {
-//   try {
-//     // Allow ?appendDate=true to control filename
-//     const appendDate = req.query.appendDate === "true";
-//     console.log("DB BACKUP - appendDate: ", appendDate);
-//     await dbBackup(appendDate);
-//     res.json({ status: "success", message: "DB backup is triggerd" });
-//   } catch (e) {
-//     console.error("DB BACKUP - error: ", e);
-//     res.status(500).json({ error: "DB BACKUP : Internal Server Error", message: e.message });
-//   }
-// });
 
 /*
  * XML IMPORT ROUTE
