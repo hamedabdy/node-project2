@@ -166,15 +166,15 @@ class Sequelizer {
    */
   async getDisplayValueFromSysId(tableName, value, reference_key) {
     try {
-      const displayField = await this.sysDictionary.getDisplayField(tableName);
+      let displayField = await this.sysDictionary.getDisplayField(tableName);
+      const hasSysName = await this.sysDictionary.isValidField(tableName, 'sys_name');
+      displayField = displayField || (hasSysName ? "sys_name" : "sys_created_on"); // Fallback to sys_created_on if no display field or sys_name exists
       const Model = await this.getTableMapping(tableName);
       const where = { [reference_key || 'sys_id']: value };
-      const attributes = displayField ? [displayField.element] : ['sys_name'];
+      const attributes = [displayField];
       const result = await Model.findOne({ where, attributes });
-      if (result) {
-        const displayValue = displayField ? result[displayField.element] : result.sys_name;
-        return { data: displayValue, status: 'success' };
-      }
+      if (result)
+        return { data: result[displayField], status: 'success' };
 
       return { data: null, status: 'fail', err: 'Record not found' };
     } catch (e) {
@@ -331,23 +331,19 @@ class Sequelizer {
  * @param {Transaction} t - shared transaction
  */
 async _parentCascadeDelete(table_name, record, t) {
-  // Delete from current table
   const Model = await this.getTableMapping(table_name);
-  console.debug("[SEQUELIZER::_parentCascadeDelete] Model : %o \n\nfrom %s \n\n record : %o", Model, table_name, record);
   await Model.destroy({
     where: record, // in case of sys_dictionary or sys_db_object, otherwise sys_id is sufficient
     individualHooks: true,
     // transaction: t,
   }).then(() => {
-    console.log("[SEQUELIZER::_parentCascadeDelete] %s - Record deleted : %o\n", table_name, record);
+    console.log("[SEQUELIZER::_parentCascadeDelete] %s - Records deleted : %o\n", table_name, record.length);
     return { record, status: "success" };
   })
   .catch((e) => {
     console.error("[SEQUELIZER::_parentCascadeDelete] %s - Delete error : %s", table_name, e);
     throw e; // Rethrow the error to be handled by the caller
   });
-
-  console.log("[SEQUELIZER::_parentCascadeDelete] Deleted record : %o from %s", record, table_name);
 
   const superClass = await this.sysDbObject.getSuperClass(table_name);
   // Recurse up if parent exists
@@ -359,6 +355,7 @@ async getTableMapping(tableName) {
   const table_map = {
     sys_db_object: this.sysDbObject,
     sys_dictionary: this.sysDictionary,
+    sys_metadata: this.sysMetaData,
   };
 
   let Model = table_map[tableName];
