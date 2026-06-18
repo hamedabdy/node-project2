@@ -2,7 +2,7 @@ const { compileJsx } = require('../services/compileJsx');
 
 /**
  * Middleware that intercepts writes to sys_ui_page,
- * compiles jsx_script, and injects jsx_compiled into the body
+ * compiles jsx_script, and injects script_compiled into the body
  * before the generic handler processes it.
  */
 async function compileSysUiPage(req, res, next) {
