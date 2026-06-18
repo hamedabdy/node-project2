@@ -169,9 +169,7 @@ module.exports = (sequelize, parent) => {
         const displayField = await this.findOne({
           where: {
             name: tableName,
-            display: {
-              [Op.in]: [true, 1, 'true', '1'],
-            },
+            display: true,
           },
         });
 
