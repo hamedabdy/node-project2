@@ -176,13 +176,12 @@ module.exports = (sequelize, parent) => {
         });
 
         if (displayField) {
-          return displayField;
+          return displayField.element;
         }
 
         const superClass = await this.sysDbObject.getSuperClass(tableName);
-        if (superClass) {
-          return await this.getDisplayField(superClass);
-        }
+        if (superClass)
+          return await this.getDisplayField(superClass); // Recursively check the super_class for a display field
 
         return null;
       } catch (error) {
@@ -206,7 +205,16 @@ module.exports = (sequelize, parent) => {
         },
         attributes: ['element'], // lightweight — only fetch what we need
       });
-      return field !== null;
+
+      if(field)
+        return true;
+
+      const superClass = await this.sysDbObject.getSuperClass(tableName);
+      if (superClass)
+        return await this.isValidField(superClass, columnName); // Recursively check the super_class for a display field
+
+      return false;
+
     } catch (error) {
       console.error(`[SysDictionary::isValidField] Error checking field ${columnName} on ${tableName}:`, error);
       return false;
