@@ -10,7 +10,7 @@ function compileJsx(rawJsx) {
       ['@babel/preset-env', { targets: { browsers: 'last 2 versions' }, modules: 'commonjs' }],
       ['@babel/preset-react', { runtime: 'classic' }]
     ],
-    filename: 'dynamic-component.jsx',
+    filename: 'sys_ui_page_dynamic-component.jsx',
   });
 
   if (!result || !result.code) {
