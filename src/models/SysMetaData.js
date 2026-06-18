@@ -60,14 +60,9 @@ module.exports = (sequelize) => {
      * @parm: sysID, unoque Id the record to delete
      */
     static async destroy(data, options) {
-      console.debug("[SysMetaData::destroy] - sys_id : %s", data);
-      throw new Error("bla bla ");
-      
       const { sys_id } = data.where;
 
       try {
-        if (utils.nil(sys_id)) throw new Error("Missing or unknown sys_id");
-
         return await super.destroy({where: { sys_id: sys_id }})
           .then((result) => {
             console.debug("[SysMetaData::destroy] - Records deleted : %i", result);
