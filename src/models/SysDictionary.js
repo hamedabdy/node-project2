@@ -191,6 +191,28 @@ module.exports = (sequelize, parent) => {
       }
     }
 
+  /**
+   * Check if a column exists in a given table by querying sys_dictionary.
+   * @param {string} tableName - The table name to lookup.
+   * @param {string} columnName - The column name to check.
+   * @returns {Promise<boolean>} True if the column exists, false otherwise.
+   */
+  static async isValidField(tableName, columnName) {
+    try {
+      const field = await this.findOne({
+        where: {
+          name: tableName,
+          element: columnName,
+        },
+        attributes: ['element'], // lightweight — only fetch what we need
+      });
+      return field !== null;
+    } catch (error) {
+      console.error(`[SysDictionary::isValidField] Error checking field ${columnName} on ${tableName}:`, error);
+      return false;
+    }
+  }
+
     // TODO : Methods : delete row, MultipleDelete rows
 
     /**
@@ -292,8 +314,7 @@ module.exports = (sequelize, parent) => {
         await this.deleteColumn(name, element);
 
         // Then delete the record in sys_dictionary which will cascade delete the record in sys_metadata due to the association and cascade delete setup in sequlizer
-        const record = await super
-          .destroy({ where: { sys_id } }, options)
+        const record = await super.destroy({ where: { sys_id } }, options)
           .then((result) => {
             return { sys_id, status: "success" };
           });
